@@ -72,7 +72,7 @@ textarea{min-height:80px;resize:vertical}
  .layout{grid-template-columns:1fr}.side{display:none}
  main{padding:14px 12px 96px}
  .bottom{display:flex;position:fixed;bottom:0;inset-inline:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
- .bottom{overflow-x:auto}.bottom button{flex:1;min-width:62px;background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 0;font-size:11px;cursor:pointer}
+ .bottom{overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 14px,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 14px,#000 calc(100% - 22px),transparent 100%)}.bottom::-webkit-scrollbar{display:none}.bottom button{flex:0 0 auto;min-width:68px;padding-inline:6px;white-space:nowrap;background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 0;font-size:11px;cursor:pointer}
  .bottom button .ic{font-size:19px}.bottom button.on{color:var(--accent-text);font-weight:700}
  .mtop{display:flex!important}
 }
@@ -134,7 +134,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v3 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v4 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -184,6 +184,7 @@ function renderNav(){
  const c=counts();
  $("#tabs").innerHTML=SECTIONS.map(s=>`<button class="tab ${ui.tab===s.id?"on":""}" data-tab="${s.id}"><span class="ic">${s.ic}</span>${s.label}${s.list?`<span class="n">${c[s.list]}</span>`:""}</button>`).join("");
  $("#bottom").innerHTML=SECTIONS.map(s=>`<button class="${ui.tab===s.id?"on":""}" data-tab="${s.id}"><span class="ic">${s.ic}</span>${s.label.replace("المهام اليومية","المهام")}</button>`).join("");
+ {const o=document.querySelector("#bottom .on");if(o&&o.scrollIntoView)o.scrollIntoView({inline:"center",block:"nearest"})}
  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ui.tab=b.dataset.tab;ui.filter=ui.tab==="tasks"?"open":"upcoming";render();scrollTo(0,0)});
 }
 function render(){document.documentElement.dataset.theme=state.settings.theme||"dark";renderNav();ui.tab==="home"?renderHome():renderSection(SECTIONS.find(s=>s.id===ui.tab))}
