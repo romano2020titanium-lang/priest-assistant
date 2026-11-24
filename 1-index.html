@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060a07">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>مساعد الكاهن الذكي</title>
+<style>
+:root{--brand:#c8ff2e;--brand-ink:#0a0f0b;--font:"Segoe UI",Tahoma,"Noto Kufi Arabic","Geeza Pro",system-ui,sans-serif;--radius:14px;
+--urgent:#ff4d5e;--important:#f5a524;--normal:#7c8a84;--done:#2ecc71}
+[data-theme="dark"]{--bg:#060a07;--surface:#0d130f;--surface-2:#131b15;--border:#1e2a21;--text:#e8efe9;--muted:#8a978e;--accent-text:var(--brand)}
+[data-theme="light"]{--bg:#f3f5f2;--surface:#fff;--surface-2:#f2f5f1;--border:#e0e6de;--text:#0d130f;--muted:#5f6b65;--accent-text:#4f7000}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}.muted{color:var(--muted)}.sm{font-size:12px}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;background:var(--surface);border-inline-end:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;gap:18px;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:0 6px}
+.logo{width:46px;height:46px;border-radius:50%;background:var(--surface-2);color:var(--accent-text);display:grid;place-items:center;font-size:24px;flex:none;box-shadow:0 0 0 2px var(--brand)}
+.brand h1{font-size:17px;margin:0;line-height:1.25}.brand p{margin:0;color:var(--muted);font-size:12px}
+.tabs{display:flex;flex-direction:column;gap:4px}
+.tab{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;background:none;border:none;border-inline-start:3px solid transparent;border-radius:10px;color:var(--muted);cursor:pointer;font-weight:600;text-align:right}
+.tab .ic{font-size:18px;width:22px;text-align:center}.tab .n{margin-inline-start:auto;font-size:12px;background:var(--surface-2);border-radius:99px;padding:0 8px}
+.tab:hover{color:var(--text);background:var(--surface-2)}
+.tab.on{color:var(--accent-text);background:var(--surface-2);border-inline-start-color:var(--brand)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+main{padding:22px;max-width:1100px;width:100%;margin:0 auto}
+.btn{background:var(--surface-2);border:1px solid var(--border);padding:9px 14px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:transparent;font-weight:700}
+.btn.danger{color:var(--urgent)}.btn.sm{padding:4px 10px;font-size:12px;border-radius:8px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.head h2{margin:0;font-size:22px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:6px 14px;border-radius:99px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;color:var(--muted)}
+.chip.on{background:var(--brand);color:var(--brand-ink);border-color:transparent;font-weight:700}
+.hero{padding:22px 24px;border-radius:20px;margin-bottom:16px;border:1px solid var(--border);background:radial-gradient(120% 160% at 100% 0%,color-mix(in srgb,var(--brand) 14%,transparent),transparent 55%),var(--surface)}
+.hero .hi{font-size:13px;color:var(--accent-text);font-weight:700}.hero h2{font-size:24px;margin:4px 0 4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:right}
+.stat:hover{border-color:var(--brand)}.stat .v{font-size:24px;font-weight:800;line-height:1.2}.stat .l{font-size:12px;color:var(--muted)}
+h3.sec{font-size:15px;margin:18px 0 8px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;border-inline-start:4px solid var(--border)}
+.card:hover{border-color:var(--muted)}
+.card.p-urgent{border-inline-start-color:var(--urgent)}.card.p-important{border-inline-start-color:var(--important)}
+.card.done .t{text-decoration:line-through;color:var(--muted)}
+.card .body{flex:1;min-width:0}.card .t{font-weight:700;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-top:3px}
+.badge{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border)}
+.badge.visit{color:var(--accent-text);border-color:var(--brand)}
+.date-box{flex:none;width:52px;text-align:center;background:var(--surface-2);border-radius:10px;padding:4px 0}
+.date-box b{display:block;font-size:20px;line-height:1.1}.date-box span{font-size:11px;color:var(--muted)}
+.check{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:none;cursor:pointer;display:grid;place-items:center;color:var(--brand-ink);margin-top:2px}
+.card.done .check{background:var(--done);border-color:var(--done)}
+.empty{text-align:center;color:var(--muted);padding:36px 10px;border:1px dashed var(--border);border-radius:var(--radius)}
+.modal{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:14px;z-index:50}
+.sheet{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;width:min(520px,100%);max-height:92vh;overflow:auto}
+.sheet h3{margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-offset:-1px}
+textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-start;flex-wrap:wrap}
+.toast{position:fixed;bottom:84px;inset-inline:0;margin:auto;width:max-content;max-width:90%;background:var(--brand);color:var(--brand-ink);padding:8px 16px;border-radius:99px;font-weight:700;z-index:60}
+.syncdot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}.syncdot.ok{background:var(--done)}.syncdot.err{background:var(--urgent)}
+.bottom{display:none}
+@media(max-width:820px){
+ .layout{grid-template-columns:1fr}.side{display:none}
+ main{padding:14px 12px 96px}
+ .bottom{display:flex;position:fixed;bottom:0;inset-inline:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:4px 2px calc(4px + env(safe-area-inset-bottom))}
+ .bottom button{flex:1;background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 0;font-size:11px;cursor:pointer}
+ .bottom button .ic{font-size:19px}.bottom button.on{color:var(--accent-text);font-weight:700}
+ .mtop{display:flex!important}
+}
+.mtop{display:none;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mtop .brand h1{font-size:16px}.mtop .logo{width:38px;height:38px;font-size:20px}
+</style></head><body>
+<div class="layout">
+ <aside class="side">
+  <div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1><p>كنيسة العائلة المقدسة</p></div></div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="side-foot">
+   <button class="btn primary hidden" id="installBtn">تثبيت التطبيق</button>
+   <button class="btn" id="syncBtn"><span class="syncdot" id="syncDot"></span> المزامنة</button>
+   <button class="btn" id="moreBtn">النسخ الاحتياطي</button>
+   <button class="btn" id="themeBtn">الوضع الفاتح / الداكن</button>
+  </div>
+ </aside>
+ <main>
+  <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
+   <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
+  <div id="view"></div>
+ </main>
+</div>
+<nav class="bottom" id="bottom"></nav>
+<div id="modalRoot"></div>
+<script>
+"use strict";
+const SECTIONS=[
+ {id:"home",label:"الرئيسية",ic:"⌂"},
+ {id:"services",label:"الخدمات",ic:"✚",list:"services",single:"خدمة",people:"المسؤول / الخادم",dated:false},
+ {id:"meetings",label:"الاجتماعات",ic:"☰",list:"meetings",single:"اجتماع",people:"الحضور",dated:true},
+ {id:"retreats",label:"النهضات",ic:"✦",list:"retreats",single:"نهضة",people:"المتكلم / الضيف",dated:true,end:true},
+ {id:"liturgies",label:"القداسات",ic:"♱",list:"liturgies",single:"قداس",people:"الكاهن / الخادم",dated:true},
+ {id:"tasks",label:"المهام اليومية",ic:"✔",list:"tasks",single:"مهمة",people:"الشخص / الأسرة",dated:true,task:true}
+];
+const LISTS=["services","meetings","retreats","liturgies","tasks"];
+const STORE="priest-assistant-v1",CFG="priest-sync-config",META="priest-sync-meta";
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayISO=()=>iso(new Date());
+function load(){try{const s=JSON.parse(localStorage.getItem(STORE)||"null");if(s)return norm(s)}catch(e){}return norm({})}
+function norm(s){s=s||{};const o={version:1,settings:s.settings||{theme:"dark"}};LISTS.forEach(k=>o[k]=Array.isArray(s[k])?s[k].filter(x=>x&&x.id):[]);return o}
+let state=load();
+let ui={tab:"home",filter:"upcoming",taskCat:"all"};
+function save(touch){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}if(touch!==false)markDirty()}
+function live(k){return state[k].filter(x=>!x.deleted)}
+function fmtDate(d,opt){if(!d)return"";try{return new Date(d+"T12:00:00").toLocaleDateString("ar-EG",opt||{weekday:"long",day:"numeric",month:"long",year:"numeric"})}catch(e){return d}}
+function fmtTime(t){if(!t)return"";const[h,m]=t.split(":").map(Number);const ap=h>=12?"م":"ص";return new Date(2000,0,1,h,m).toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit",hour12:true})}
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+/* ---------- render ---------- */
+function counts(){const t=todayISO();return{
+ services:live("services").length,
+ meetings:live("meetings").filter(x=>(x.date||"9")>=t).length,
+ retreats:live("retreats").filter(x=>(x.endDate||x.date||"9")>=t).length,
+ liturgies:live("liturgies").filter(x=>(x.date||"9")>=t).length,
+ tasks:live("tasks").filter(x=>x.status!=="done").length}}
+function renderNav(){
+ const c=counts();
+ $("#tabs").innerHTML=SECTIONS.map(s=>`<button class="tab ${ui.tab===s.id?"on":""}" data-tab="${s.id}"><span class="ic">${s.ic}</span>${s.label}${s.list?`<span class="n">${c[s.list]}</span>`:""}</button>`).join("");
+ $("#bottom").innerHTML=SECTIONS.map(s=>`<button class="${ui.tab===s.id?"on":""}" data-tab="${s.id}"><span class="ic">${s.ic}</span>${s.label.replace("المهام اليومية","المهام")}</button>`).join("");
+ document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ui.tab=b.dataset.tab;ui.filter=ui.tab==="tasks"?"open":"upcoming";render();scrollTo(0,0)});
+}
+function render(){document.documentElement.dataset.theme=state.settings.theme||"dark";renderNav();ui.tab==="home"?renderHome():renderSection(SECTIONS.find(s=>s.id===ui.tab))}
+function sortItems(a,b){const da=a.date||"9999",db=b.date||"9999";return da===db?(a.time||"").localeCompare(b.time||""):da.localeCompare(db)}
+function card(sec,it){
+ const d=it.date?new Date(it.date+"T12:00:00"):null;
+ const box=d?`<div class="date-box"><b>${d.toLocaleDateString("ar-EG",{day:"numeric"})}</b><span>${d.toLocaleDateString("ar-EG",{month:"short"})}</span></div>`:"";
+ const meta=[];
+ if(it.time)meta.push("🕒 "+fmtTime(it.time));
+ if(it.endDate)meta.push("حتى "+fmtDate(it.endDate,{day:"numeric",month:"long"}));
+ if(it.repeat)meta.push("🔁 "+esc(it.repeat));
+ if(it.place)meta.push("📍 "+esc(it.place));
+ if(it.people)meta.push("👤 "+esc(it.people));
+ if(sec.task&&it.category==="visit"&&it.lastContacted)meta.push("آخر تواصل: "+fmtDate(it.lastContacted,{day:"numeric",month:"long"}));
+ let badge="";
+ if(sec.task&&it.category==="visit")badge=`<span class="badge visit">افتقاد</span>`;
+ const chk=sec.task?`<button class="check" data-chk="${it.id}" title="تم">${it.status==="done"?"✓":""}</button>`:"";
+ return `<div class="card ${sec.task?"p-"+(it.priority||"normal"):""} ${it.status==="done"?"done":""}" data-id="${it.id}" data-list="${sec.list}">${chk}${box}<div class="body"><div class="t">${esc(it.title)} ${badge}</div><div class="meta">${meta.map(m=>`<span>${m}</span>`).join("")}</div>${it.notes?`<div class="meta" style="margin-top:4px">${esc(it.notes).slice(0,140)}</div>`:""}${sec.task&&it.category==="visit"&&it.phone?`<div style="margin-top:6px"><button class="btn sm" data-wa="${it.id}">💬 واتساب</button></div>`:""}</div></div>`;
+}
+function bindCards(root){
+ root.querySelectorAll("[data-wa]").forEach(b=>b.onclick=e=>{e.stopPropagation();openWA(b.dataset.wa)});
+ root.querySelectorAll(".card").forEach(c=>c.onclick=e=>{if(e.target.closest("[data-chk]")||e.target.closest("[data-wa]"))return;openForm(c.dataset.list,c.dataset.id)});
+ root.querySelectorAll("[data-chk]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleDone(b.dataset.chk)});
+}
+function toggleDone(id){const it=state.tasks.find(x=>x.id===id);if(!it)return;it.status=it.status==="done"?"pending":"done";it.updatedAt=Date.now();save();render()}
+function renderHome(){
+ const t=todayISO(),c=counts();
+ const h=new Date().getHours();const hi=h<12?"صباح الخير يا أبونا":h<18?"نهارك سعيد يا أبونا":"مساء الخير يا أبونا";
+ const soon=[];
+ SECTIONS.filter(s=>s.list&&s.dated).forEach(s=>live(s.list).forEach(it=>{
+  if(s.task&&it.status==="done")return;
+  const d=it.date;if(!d)return;
+  const end=new Date();end.setDate(end.getDate()+14);
+  if((it.endDate||d)>=t&&d<=iso(end))soon.push([s,it])}));
+ soon.sort((a,b)=>sortItems(a[1],b[1]));
+ const late=live("tasks").filter(x=>x.status!=="done"&&x.date&&x.date<t);
+ const todayTasks=live("tasks").filter(x=>x.status!=="done"&&x.date===t).length;
+ $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}</div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks.toLocaleString("ar-EG")} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length.toLocaleString("ar-EG")} متأخرة`:""}</p></div>
+ <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list].toLocaleString("ar-EG")}</div><div class="l">${s.label}</div></button>`).join("")}</div>
+ ${late.length?`<h3 class="sec">مهام متأخرة</h3><div class="list" id="lateL">${late.sort(sortItems).map(i=>card(SECTIONS[5],i)).join("")}</div>`:""}
+ <h3 class="sec">القادم خلال ١٤ يومًا</h3>
+ <div class="list" id="soonL">${soon.length?soon.map(([s,i])=>`<div style="display:contents">${card(s,i)}</div>`).join(""):`<div class="empty">لا شيء مجدول. اضغط على أي قسم لإضافة عنصر.</div>`}</div>
+ <div class="actions"><button class="btn primary" id="qa">+ إضافة سريعة</button></div>`;
+ document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ui.tab=b.dataset.go;ui.filter=ui.tab==="tasks"?"open":"upcoming";render()});
+ bindCards($("#view"));
+ $("#qa").onclick=quickAdd;
+}
+function quickAdd(){
+ openModal(`<h3>إضافة سريعة</h3><div class="list">${SECTIONS.filter(s=>s.list).map(s=>`<button class="btn" data-q="${s.list}">+ ${s.single}</button>`).join("")}</div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);
+ document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
+}
+function renderSection(sec){
+ let items=live(sec.list),t=todayISO();
+ let chips="";
+ if(sec.task){
+  const cats=[["all","الكل"],["general","مهام"],["visit","الافتقادات"]];
+  chips+=`<div class="chips">${cats.map(([k,l])=>`<button class="chip ${ui.taskCat===k?"on":""}" data-cat="${k}">${l}</button>`).join("")}</div>`;
+  if(ui.taskCat!=="all")items=items.filter(x=>(x.category||"general")===ui.taskCat);
+  const fl=[["open","المفتوحة"],["done","المنجزة"],["all","الكل"]];
+  chips+=`<div class="chips">${fl.map(([k,l])=>`<button class="chip ${ui.filter===k?"on":""}" data-f="${k}">${l}</button>`).join("")}</div>`;
+  items=items.filter(x=>ui.filter==="all"||(ui.filter==="done"?x.status==="done":x.status!=="done"));
+ } else if(sec.dated){
+  const fl=[["upcoming","القادمة"],["past","السابقة"],["all","الكل"]];
+  chips=`<div class="chips">${fl.map(([k,l])=>`<button class="chip ${ui.filter===k?"on":""}" data-f="${k}">${l}</button>`).join("")}</div>`;
+  if(ui.filter==="upcoming")items=items.filter(x=>(x.endDate||x.date||"9")>=t);
+  if(ui.filter==="past")items=items.filter(x=>x.date&&(x.endDate||x.date)<t);
+ }
+ items.sort(sec.task||ui.filter!=="past"?sortItems:(a,b)=>sortItems(b,a));
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><button class="btn primary" id="addBtn">+ ${sec.task&&ui.taskCat==="visit"?"افتقاد جديد":"إضافة "+sec.single}</button></div>${chips}
+ <div class="list">${items.length?items.map(i=>card(sec,i)).join(""):`<div class="empty">لا توجد عناصر هنا بعد.</div>`}</div>`;
+ document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ui.filter=b.dataset.f;render()});
+ document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{ui.taskCat=b.dataset.cat;render()});
+ $("#addBtn").onclick=()=>openForm(sec.list,null,sec.task&&ui.taskCat==="visit"?{category:"visit"}:null);
+ bindCards($("#view"));
+}
+
+/* ---------- modal / form ---------- */
+function openModal(h){closeModal();const m=document.createElement("div");m.className="modal";m.id="modal";m.innerHTML=`<div class="sheet">${h}</div>`;m.onclick=e=>{if(e.target===m)closeModal()};$("#modalRoot").appendChild(m);m.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModal);return m}
+function closeModal(){const m=$("#modal");if(m)m.remove()}
+function openForm(list,id,pre){
+ const sec=SECTIONS.find(s=>s.list===list);
+ const it=id?state[list].find(x=>x.id===id):Object.assign({date:sec.dated&&!sec.task?"":(sec.task?todayISO():""),priority:"normal",status:"pending",category:"general"},pre||{});
+ const f=(k,label,type="text",extra="")=>`<label>${label}</label><input type="${type}" name="${k}" value="${esc(it[k]||"")}" ${extra}>`;
+ let h=`<h3>${id?"تعديل":"إضافة"} ${sec.single}</h3><form id="f">`;
+ h+=f("title","العنوان","text","required");
+ if(sec.task)h+=`<label>التصنيف</label><select name="category"><option value="general">مهمة عادية</option><option value="visit">افتقاد</option></select>`;
+ if(sec.id==="services")h+=f("repeat","التكرار (مثال: كل جمعة)");
+ if(sec.dated)h+=`<div class="row2"><div>${f("date","التاريخ","date")}</div><div>${f("time","الوقت","time")}</div></div>`;
+ else h+=f("time","الوقت","time");
+ if(sec.end)h+=f("endDate","ينتهي في (اختياري)","date");
+ if(sec.task)h+=`<div class="row2"><div><label>الأهمية</label><select name="priority"><option value="urgent">عاجل</option><option value="important">مهم</option><option value="normal">عادي</option></select></div><div><label>الحالة</label><select name="status"><option value="pending">لم تبدأ</option><option value="done">تمت</option></select></div></div>`;
+ h+=f("place","المكان")+f("people",sec.people);
+ if(sec.task)h+=`<div id="visitFields"><label>رقم واتساب (يُحفظ في جهازك وفي الـ Sheet الخاص بك فقط)</label><input type="tel" name="phone" dir="ltr" placeholder="مثال: 01001234567" value="${esc(it.phone||"")}">${f("lastContacted","آخر تواصل","date")}</div>`;
+ h+=+`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
+ h+=`<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
+ const m=openModal(h);const form=$("#f",m);
+ ["category","priority","status"].forEach(k=>{if(form[k])form[k].value=it[k]||(k==="category"?"general":k==="priority"?"normal":"pending")});
+ const vf=$("#visitFields",m);if(vf){const sh=()=>vf.classList.toggle("hidden",form.category.value!=="visit");form.category.onchange=sh;sh()}
+ form.onsubmit=e=>{e.preventDefault();
+  const o=id?it:{id:uid(),createdAt:Date.now()};
+  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});
+  if(!o.title)return;o.updatedAt=Date.now();
+  if(!id)state[list].push(o);save();closeModal();render();toast("تم الحفظ")};
+ if(id)$("#delBtn").onclick=()=>{if(confirm("حذف هذا العنصر؟")){it.deleted=true;it.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}};
+}
+
+/* ---------- sync (Google Sheet via Apps Script) ---------- */
+const cfg=()=>{try{return JSON.parse(localStorage.getItem(CFG)||"null")}catch(e){return null}};
+const meta=()=>{try{return JSON.parse(localStorage.getItem(META)||"{}")}catch(e){return{}}};
+const setMeta=m=>localStorage.setItem(META,JSON.stringify(Object.assign(meta(),m)));
+let timer=null,busy=false;
+function dot(c){["#syncDot","#syncDot2"].forEach(s=>{const e=$(s);if(e)e.className="syncdot "+(c||"")})}
+function markDirty(){if(!cfg())return;setMeta({dirty:1});clearTimeout(timer);timer=setTimeout(()=>sync(),1500)}
+function mergeInto(a,b){ // per-item merge by id, newer updatedAt wins; nothing is dropped
+ const sa=a.settings||{},sb=(b&&b.settings)||{};
+ const out={version:1,settings:Object.assign({},sb,sa)};
+ if((sb.templatesAt||0)>(sa.templatesAt||0)){out.settings.templates=sb.templates;out.settings.templatesAt=sb.templatesAt}
+ LISTS.forEach(k=>{const m=new Map();((b&&b[k])||[]).forEach(x=>m.set(x.id,x));
+  (a[k]||[]).forEach(x=>{const y=m.get(x.id);if(!y||(x.updatedAt||0)>=(y.updatedAt||0))m.set(x.id,x)});out[k]=[...m.values()]});
+ return norm(out)}
+async function req(method,payload){
+ const c=cfg();
+ if(method==="GET"){const r=await fetch(c.url+(c.url.includes("?")?"&":"?")+"token="+encodeURIComponent(c.token));return r.json()}
+ const r=await fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({token:c.token},payload))});return r.json()}
+async function sync(){
+ if(!cfg()||busy)return;busy=true;
+ try{
+  const r=await req("GET");if(r.error)throw new Error(r.error);
+  let before=JSON.stringify(state);
+  if(r.data)state=mergeInto(state,norm(r.data));
+  const changed=JSON.stringify(state)!==before;
+  const remoteSame=r.data&&JSON.stringify(mergeInto(norm(r.data),norm({})))===JSON.stringify(state);
+  if(changed){localStorage.setItem(STORE,JSON.stringify(state));render()}
+  if(!r.data||!remoteSame||meta().dirty){
+   const p=await req("POST",{updatedAt:Date.now(),data:state});if(p.error)throw new Error(p.error);
+   if(p.data){const mg=mergeInto(state,norm(p.data));if(JSON.stringify(mg)!==JSON.stringify(state)){state=mg;localStorage.setItem(STORE,JSON.stringify(state));render()}}
+  }
+  setMeta({dirty:0,last:Date.now()});dot("ok");
+ }catch(e){dot("err")}finally{busy=false}}
+function syncDialog(){
+ const c=cfg()||{};
+ const m=openModal(`<h3>المزامنة بين الأجهزة</h3><p class="muted sm">البيانات تُحفظ في Google Sheet خاص بك. الرمز يُحفظ على هذا الجهاز فقط.</p><label>رابط التطبيق (Apps Script)</label><input id="sUrl" value="${esc(c.url||"")}" dir="ltr"><label>الرمز السري</label><input id="sTok" type="password" value="${esc(c.token||"")}" dir="ltr"><div class="actions"><button class="btn primary" id="sGo">حفظ وتفعيل</button><button class="btn" data-close>إغلاق</button>${c.url?`<button class="btn danger" id="sOff" style="margin-inline-start:auto">إيقاف</button>`:""}</div>`);
+ $("#sGo",m).onclick=()=>{const u=$("#sUrl",m).value.trim(),t=$("#sTok",m).value.trim();if(!/^https:\/\/script\.google\.com\//.test(u)||!t){toast("تحقق من الرابط والرمز");return}localStorage.setItem(CFG,JSON.stringify({url:u,token:t}));setMeta({dirty:1});closeModal();sync().then(()=>toast("تم تفعيل المزامنة"))};
+ const off=$("#sOff",m);if(off)off.onclick=()=>{localStorage.removeItem(CFG);dot("");closeModal();toast("تم إيقاف المزامنة")};
+}
+(function(){const m=location.hash.match(/^#sync=(.+)$/);if(!m)return;
+ try{const c=JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+  if(c&&/^https:\/\/script\.google\.com\//.test(c.url)&&c.token){localStorage.setItem(CFG,JSON.stringify({url:c.url,token:c.token}));setMeta({dirty:1})}}catch(e){}
+ history.replaceState(null,"",location.pathname+location.search)})();
+
+
+/* ---------- WhatsApp visit messages (one person at a time, click-to-chat) ---------- */
+const DEFAULT_TPL=[
+ {id:"t1",name:"افتقاد عام",text:"سلام ونعمة يا {الاسم}، معاك الأب شربل. حبيت أطمّن عليكم وأسأل عن أحوالكم. ربنا يحفظكم ويبارك حياتكم. 🙏"},
+ {id:"t2",name:"زيارة قريبة",text:"سلام ونعمة يا {الاسم}، معاك الأب شربل. عايز أزوركم قريب بإذن ربنا. إيه الوقت المناسب ليكم؟ 🙏"},
+ {id:"t3",name:"صلاة وتشجيع",text:"سلام ونعمة يا {الاسم}، افتكرتكم في صلاتي النهاردة. ربنا يكون معاكم ويعطيكم سلامه. لو محتاجين أي حاجة أنا في الخدمة. 🙏"},
+ {id:"t4",name:"دعوة للكنيسة",text:"سلام ونعمة يا {الاسم}، بنفتقدكم في الكنيسة. نتمنى نشوفكم قريب. ربنا يبارككم. 🙏"}];
+const tpls=()=>(state.settings.templates&&state.settings.templates.length)?state.settings.templates:DEFAULT_TPL;
+function waNumber(p){let d=String(p||"").replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[^\d+]/g,"");if(d.startsWith("+"))return d.slice(1).replace(/\D/g,"");d=d.replace(/\D/g,"");if(d.startsWith("00"))return d.slice(2);if(d.startsWith("0"))return "20"+d.slice(1);return d}
+function openWA(id){
+ const it=state.tasks.find(x=>x.id===id);if(!it)return;
+ const name=(it.people||it.title||"").trim();
+ const T=tpls();
+ const m=openModal(`<h3>رسالة واتساب: ${esc(name)}</h3><label>القالب</label><select id="wTpl">${T.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join("")}</select><label>نص الرسالة (يمكنك تعديله)</label><textarea id="wTxt" style="min-height:120px"></textarea><p class="muted sm">يفتح واتساب برسالة جاهزة، وأنت تضغط إرسال بنفسك. لا يوجد إرسال تلقائي.</p><div class="actions"><button class="btn primary" id="wGo">فتح واتساب</button><button class="btn" data-close>إلغاء</button></div>`);
+ const fill=()=>{$("#wTxt",m).value=T[$("#wTpl",m).value].text.replaceAll("{الاسم}",name)};
+ $("#wTpl",m).onchange=fill;fill();
+ $("#wGo",m).onclick=()=>{
+  const n=waNumber(it.phone);if(n.length<8){toast("رقم الهاتف غير صالح");return}
+  window.open("https://wa.me/"+n+"?text="+encodeURIComponent($("#wTxt",m).value),"_blank","noopener");
+  it.lastContacted=todayISO();it.updatedAt=Date.now();save();closeModal();render();toast("تم تسجيل آخر تواصل")};
+}
+function tplDialog(){
+ const T=JSON.parse(JSON.stringify(tpls()));
+ const m=openModal(`<h3>قوالب رسائل الافتقاد</h3><p class="muted sm">استخدم {الاسم} ليحل محله اسم الشخص.</p><div id="tl"></div><div class="actions"><button class="btn" id="tAdd">+ قالب</button><button class="btn primary" id="tSave">حفظ</button><button class="btn" data-close>إغلاق</button></div>`);
+ const draw=()=>{$("#tl",m).innerHTML=T.map((t,i)=>`<div style="border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:8px"><input data-n="${i}" value="${esc(t.name)}"><textarea data-x="${i}" style="margin-top:6px">${esc(t.text)}</textarea><button class="btn sm danger" data-d="${i}" style="margin-top:6px">حذف القالب</button></div>`).join("");
+  m.querySelectorAll("[data-n]").forEach(e=>e.oninput=()=>T[e.dataset.n].name=e.value);
+  m.querySelectorAll("[data-x]").forEach(e=>e.oninput=()=>T[e.dataset.x].text=e.value);
+  m.querySelectorAll("[data-d]").forEach(e=>e.onclick=()=>{T.splice(e.dataset.d,1);draw()})};
+ draw();
+ $("#tAdd",m).onclick=()=>{T.push({id:uid(),name:"قالب جديد",text:"سلام ونعمة يا {الاسم}، "});draw()};
+ $("#tSave",m).onclick=()=>{state.settings.templates=T;state.settings.templatesAt=Date.now();save();closeModal();toast("تم حفظ القوالب")};
+}
+
+/* ---------- backup / theme / install ---------- */
+function moreDialog(){
+ const m=openModal(`<h3>النسخ الاحتياطي</h3><div class="list"><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#tplB",m).onclick=tplDialog;
+ $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
+ $("#imp",m).onclick=()=>$("#impf",m).click();
+ $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
+}
+function toggleTheme(){state.settings.theme=(state.settings.theme==="light")?"dark":"light";save();render()}
+let deferred=null;
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;["#installBtn","#installBtn2"].forEach(s=>$(s).classList.remove("hidden"))});
+addEventListener("appinstalled",()=>{["#installBtn","#installBtn2"].forEach(s=>$(s).classList.add("hidden"));toast("تم التثبيت")});
+["#installBtn","#installBtn2"].forEach(s=>$(s).onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null});
+["#syncBtn","#syncBtn2"].forEach(s=>$(s).onclick=syncDialog);
+["#moreBtn","#moreBtn2"].forEach(s=>$(s).onclick=moreDialog);
+$("#themeBtn").onclick=toggleTheme;
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
+setInterval(()=>{if(!document.hidden)sync()},60000);
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+render();if(cfg())sync();
+</script></body></html>
