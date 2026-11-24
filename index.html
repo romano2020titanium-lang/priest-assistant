@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.2 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.3 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -210,14 +210,24 @@ function card(sec,it){
  if(sec.task&&it.category==="visit"&&it.lastContacted)meta.push("آخر تواصل: "+fmtDate(it.lastContacted,{day:"numeric",month:"long"}));
  let badge="";
  if(sec.task&&it.category==="visit")badge=`<span class="badge visit">افتقاد</span>`;
- const chk=sec.task?`<button class="check" data-chk="${it.id}" title="تم">${it.status==="done"?"✓":""}</button>`:"";
- return `<div class="card ${sec.task?"p-"+(it.priority||"normal"):""} ${it.status==="done"?"done":""}" data-id="${it.id}" data-list="${sec.list}">${chk}${box}<div class="body"><div class="t">${esc(it.title)} ${badge}</div><div class="meta">${meta.map(m=>`<span>${m}</span>`).join("")}</div>${it.notes?`<div class="meta" style="margin-top:4px">${esc(it.notes).slice(0,140)}</div>`:""}${sec.task&&it.category==="visit"&&it.phone?`<div style="margin-top:6px"><button class="btn sm" data-wa="${it.id}">💬 واتساب</button></div>`:""}</div></div>`;
+ const evt=["meetings","retreats","liturgies"].includes(sec.id);
+ const chk=sec.task?`<button class="check" data-chk="${it.id}" title="تم">${it.status==="done"?"✓":""}</button>`:(evt?`<button class="check" data-dn="${it.id}" data-dl="${sec.list}" title="تم">${it.done?"✓":""}</button>`:"");
+ if(evt&&it.done)meta.push("✓ تم"+(it.attend!==undefined&&it.attend!==""?" · "+esc(it.attend)+" حاضر":"")+(RATE[it.rating]?" · "+RATE[it.rating]:""));
+ return `<div class="card ${sec.task?"p-"+(it.priority||"normal"):""} ${it.status==="done"||it.done?"done":""}" data-id="${it.id}" data-list="${sec.list}">${chk}${box}<div class="body"><div class="t">${esc(it.title)} ${badge}</div><div class="meta">${meta.map(m=>`<span>${m}</span>`).join("")}</div>${it.notes?`<div class="meta" style="margin-top:4px">${esc(it.notes).slice(0,140)}</div>`:""}${sec.task&&it.category==="visit"&&it.phone?`<div style="margin-top:6px"><button class="btn sm" data-wa="${it.id}">💬 واتساب</button></div>`:""}</div></div>`;
 }
 function bindCards(root){
  root.querySelectorAll("[data-wa]").forEach(b=>b.onclick=e=>{e.stopPropagation();openWA(b.dataset.wa)});
- root.querySelectorAll(".card").forEach(c=>c.onclick=e=>{if(e.target.closest("[data-chk]")||e.target.closest("[data-wa]"))return;openForm(c.dataset.list,c.dataset.id)});
+ root.querySelectorAll(".card").forEach(c=>c.onclick=e=>{if(e.target.closest("[data-chk]")||e.target.closest("[data-dn]")||e.target.closest("[data-wa]"))return;openForm(c.dataset.list,c.dataset.id)});
  root.querySelectorAll("[data-chk]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleDone(b.dataset.chk)});
+ root.querySelectorAll("[data-dn]").forEach(b=>b.onclick=e=>{e.stopPropagation();doneDialog(b.dataset.dl,b.dataset.dn)});
 }
+const RATE={low:"حضور قليل",mid:"حضور متوسط",high:"حضور كبير"};
+function doneDialog(list,id){
+ const it=state[list].find(x=>x.id===id);if(!it)return;
+ const m=openModal(`<h3>✓ تم: ${esc(it.title)}</h3><label>عدد الحضور (اختياري)</label><input id="dnA" type="number" min="0" inputmode="numeric" value="${esc(it.attend||"")}"><label>تقييم الحضور (اختياري)</label><select id="dnR"><option value="">بدون</option><option value="low">قليل</option><option value="mid">متوسط</option><option value="high">كبير</option></select><div class="actions"><button class="btn primary" id="dnS">تم ✓</button><button class="btn" data-close>إلغاء</button>${it.done?`<button class="btn danger" id="dnU" style="margin-inline-start:auto">إلغاء علامة تم</button>`:""}</div>`);
+ $("#dnR",m).value=it.rating||"";
+ $("#dnS",m).onclick=()=>{it.done=true;it.doneAt=todayISO();it.attend=$("#dnA",m).value.trim();it.rating=$("#dnR",m).value;it.updatedAt=Date.now();save();closeModal();render();toast("تم تسجيله ✓")};
+ const u=$("#dnU",m);if(u)u.onclick=()=>{it.done=false;it.doneAt="";it.updatedAt=Date.now();save();closeModal();render();toast("أُلغيت العلامة")}}
 function toggleDone(id){const it=state.tasks.find(x=>x.id===id);if(!it)return;it.status=it.status==="done"?"pending":"done";it.doneAt=it.status==="done"?todayISO():"";it.updatedAt=Date.now();save();render()}
 function renderHome(){
  const t=todayISO(),c=counts();
@@ -503,10 +513,15 @@ function rpCsv(){
  R.forEach(x=>L.push([x.m,x.v,x.p,x.mt,x.rt,x.l,x.t].map(q).join(",")));
  L.push(["المجموع",...["v","p","mt","rt","l","t"].map(k=>R.reduce((a,x)=>a+x[k],0))].map(q).join(","));
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+L.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="stats-"+rp.mode+"-"+rp.date.slice(0,7)+".csv";a.click()}
+function doneHtml(){
+ const [s,e]=rpRange(),T=[["meetings","الاجتماعات"],["liturgies","القداسات"],["retreats","النهضات"]],today=todayISO();
+ const rows=T.map(([l,n])=>{const a=live(l).filter(x=>x.date&&(l==="retreats"?(x.date<=e&&(x.endDate||x.date)>=s):inR(x.date,s,e)));const d=a.filter(x=>x.done),pastUn=a.filter(x=>!x.done&&x.date<today).length;const w=d.filter(x=>x.attend!==undefined&&x.attend!==""&&!isNaN(+x.attend));const av=w.length?Math.round(w.reduce((q,x)=>q+ +x.attend,0)/w.length):null;
+  return a.length?`<div class="rp-li"><span>${n}: تم ${d.length} من ${a.length}${pastUn?` <span class="muted sm">(${pastUn} لم تُعلَّم)</span>`:""}</span><span class="muted">${av!==null?"متوسط الحضور "+av:""}</span></div>`:""}).join("");
+ return `<div class="rp-sec"><h4>تم مقابل المخطط</h4>${rows||'<div class="muted sm">لا شيء</div>'}</div>`}
 function attendHtml(){
  const list=(a,f)=>a.map(x=>`<div class="rp-li">${f(x)}</div>`).join("");
  const T={meetings:"اجتماع",retreats:"نهضة",liturgies:"قداس"};
- const all=[].concat(...Object.keys(T).map(l=>live(l).filter(x=>x.attend!==undefined&&x.attend!==""&&!isNaN(+x.attend)&&x.date).map(x=>({t:x.title,d:x.date,n:+x.attend,k:T[l]})))).sort((a,b)=>a.d<b.d?-1:1);
+ const all=[].concat(...Object.keys(T).map(l=>live(l).filter(x=>x.attend!==undefined&&x.attend!==""&&!isNaN(+x.attend)&&x.date).map(x=>({t:x.title,d:x.date,n:+x.attend,r:x.rating,k:T[l]})))).sort((a,b)=>a.d<b.d?-1:1);
  if(!all.length)return `<div class="rp-sec"><h4>الحضور</h4><div class="muted sm">سجّل «عدد الحضور» داخل الاجتماع أو القداس أو النهضة لتظهر الإحصائية هنا.</div></div>`;
  const last=all.slice(-12),mx=Math.max(...last.map(x=>x.n),1);
  const avg=k=>{const a=all.filter(x=>x.k===k);return a.length?Math.round(a.reduce((s,x)=>s+x.n,0)/a.length):null};
@@ -514,7 +529,7 @@ function attendHtml(){
  const tr=last.length>=4?(m(last.slice(half))>m(last.slice(0,half))*1.05?"📈 في ارتفاع":m(last.slice(half))<m(last.slice(0,half))*0.95?"📉 في انخفاض":"➖ ثابت تقريبًا"):"";
  const bars=last.map(x=>`<div style="flex:1;min-width:0;text-align:center"><div class="muted sm">${x.n}</div><div title="${esc(x.t)}" style="background:var(--brand);height:${Math.max(4,Math.round(x.n/mx*80))}px;border-radius:4px 4px 0 0"></div><div class="muted" style="font-size:10px">${esc(fmtDate(x.d,{day:"numeric",month:"numeric"}))}</div></div>`).join("");
  const avgs=Object.values(T).map(k=>avg(k)!==null?`${k}: ${avg(k)}`:"").filter(Boolean).join(" · ");
- return `<div class="rp-sec"><h4>الحضور ${tr}</h4><div style="display:flex;gap:4px;align-items:flex-end;direction:ltr">${bars}</div><div class="muted sm">آخر ${last.length} مناسبة · المتوسط: ${esc(avgs)}</div>${list(last.slice().reverse(),x=>`<span>${esc(x.k)}: ${esc(x.t)}</span><span class="muted">${x.n}</span>`)}</div>`;
+ return `<div class="rp-sec"><h4>الحضور ${tr}</h4><div style="display:flex;gap:4px;align-items:flex-end;direction:ltr">${bars}</div><div class="muted sm">آخر ${last.length} مناسبة · المتوسط: ${esc(avgs)}</div>${list(last.slice().reverse(),x=>`<span>${esc(x.k)}: ${esc(x.t)}</span><span class="muted">${x.n}${RATE[x.r]?" · "+RATE[x.r].replace("حضور ",""):""}</span>`)}</div>`;
 }
 function renderReports(sec){
  const r=rpCompute();
@@ -531,6 +546,7 @@ function renderReports(sec){
  ${sect("النهضات",list(r.ret,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("القداسات",list(r.lit,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("المهام",list(r.tDone,x=>`<span>✓ ${esc(x.title)}</span>`)+list(r.tPend,x=>`<span>○ ${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`).replace('<div class="muted sm">لا شيء</div>',""))}
+ ${doneHtml()}
  ${attendHtml()}
  ${sect("الخدمات: الأداء الأسبوعي",list(r.svc,x=>`<span>${esc(x.sv.title)} · تقدم ${svProg(x.sv)}%${x.notes.length?`<br><span class="muted sm">${esc(x.notes.join("؛ "))}</span>`:""}</span><span class="stars">${x.avg?x.avg.toFixed(1)+"★":""} <span class="muted">${x.done}/${x.n} أسبوع</span></span>`))}`;
  document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{rp.mode=b.dataset.rm;render()});
@@ -560,16 +576,17 @@ function openForm(list,id,pre){
  if(sec.end)h+=f("endDate","ينتهي في (اختياري)","date");
  if(sec.task)h+=`<div class="row2"><div><label>الأهمية</label><select name="priority"><option value="urgent">عاجل</option><option value="important">مهم</option><option value="normal">عادي</option></select></div><div><label>الحالة</label><select name="status"><option value="pending">لم تبدأ</option><option value="done">تمت</option></select></div></div>`;
  h+=f("place","المكان")+f("people",sec.people);
- if(["meetings","retreats","liturgies"].includes(sec.id))h+=f("attend","عدد الحضور (اختياري)","number",'min="0" inputmode="numeric"');
+ if(["meetings","retreats","liturgies"].includes(sec.id))h+=`<label><input type="checkbox" name="done" style="width:auto"> تم</label>`+f("attend","عدد الحضور (اختياري)","number",'min="0" inputmode="numeric"')+`<label>تقييم الحضور</label><select name="rating"><option value="">بدون</option><option value="low">قليل</option><option value="mid">متوسط</option><option value="high">كبير</option></select>`;
  if(sec.task)h+=`<div id="visitFields"><label>رقم واتساب (يُحفظ في جهازك وفي الـ Sheet الخاص بك فقط)</label><input type="tel" name="phone" dir="ltr" placeholder="مثال: 01001234567" value="${esc(it.phone||"")}">${f("lastContacted","آخر تواصل","date")}</div>`;
  h+=`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
  h+=`<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
  const m=openModal(h);const form=$("#f",m);
+ if(form.done){form.done.checked=!!it.done;form.rating.value=it.rating||""}
  ["category","priority","status","recur"].forEach(k=>{if(form[k])form[k].value=it[k]||(k==="recur"?"":k==="category"?"general":k==="priority"?"normal":"pending")});
  const vf=$("#visitFields",m);if(vf){const sh=()=>vf.classList.toggle("hidden",form.category.value!=="visit");form.category.onchange=sh;sh()}
  form.onsubmit=e=>{e.preventDefault();
   const o=id?it:{id:uid(),createdAt:Date.now()};const RF=["title","time","place","people","notes"],pre=id?RF.map(k=>it[k]||"").join("|"):"";
-  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur","attend"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});
+  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur","attend","rating"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});if(form.done){const nd=form.done.checked;if(nd&&!o.done)o.doneAt=todayISO();if(!nd)o.doneAt="";o.done=nd}
   if(!o.title)return;if(list==="tasks"){if(o.status==="done"&&!o.doneAt)o.doneAt=todayISO();if(o.status!=="done")o.doneAt=""}o.updatedAt=Date.now();
   if(!id)state[list].push(o);save();ensureRecurring();closeModal();render();toast("تم الحفظ");
   if(id&&(o.recur||o.parent)&&RF.map(k=>o[k]||"").join("|")!==pre)setTimeout(()=>rChoice("تطبيق هذا التعديل على:",c=>{if(c==="one")return;seriesItems(list,o).filter(x=>x.id!==o.id&&!x.deleted&&(c==="all"||x.date>o.date)).forEach(x=>{RF.forEach(f=>x[f]=o[f]);x.updatedAt=Date.now()});save();render();toast("تم التطبيق")}),60)};
