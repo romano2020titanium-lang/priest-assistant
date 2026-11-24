@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.9 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.0 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -176,7 +176,7 @@ function load(){try{const s=JSON.parse(localStorage.getItem(STORE)||"null");if(s
 function norm(s){s=s||{};const o={version:1,settings:s.settings||{theme:"dark"}};LISTS.forEach(k=>o[k]=Array.isArray(s[k])?s[k].filter(x=>x&&x.id):[]);return o}
 let state=load();
 let ui={tab:"home",filter:"upcoming",taskCat:"all"};
-function save(touch){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}if(touch!==false)markDirty()}
+function save(touch){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}try{logDiff()}catch(e){}if(touch!==false)markDirty()}
 function live(k){return state[k].filter(x=>!x.deleted)}
 function fmtDate(d,opt){if(!d)return"";try{return (d instanceof Date?d:new Date(d+"T12:00:00")).toLocaleDateString("ar-EG",opt||{weekday:"long",day:"numeric",month:"long",year:"numeric"})}catch(e){return d}}
 function fmtTime(t){if(!t)return"";const[h,m]=t.split(":").map(Number);const ap=h>=12?"م":"ص";return new Date(2000,0,1,h,m).toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit",hour12:true})}
@@ -303,6 +303,24 @@ function backupDialog(){const a=bkList().slice().reverse();
  $("#bkNow",m).onclick=()=>{autoBackup(true);closeModal();backupDialog()};
  m.querySelectorAll("[data-bd]").forEach(b=>b.onclick=()=>{const x=a[+b.dataset.bd];const l=document.createElement("a");l.href=URL.createObjectURL(new Blob([x.d],{type:"application/json"}));l.download="priest-backup-"+new Date(x.at).toISOString().slice(0,10)+".json";l.click()});
  m.querySelectorAll("[data-br]").forEach(b=>b.onclick=()=>{if(!confirm("دمج هذه النسخة مع بياناتك الحالية؟ (لن يُحذف شيء)"))return;try{autoBackup(true);state=mergeInto(state,norm(JSON.parse(a[+b.dataset.br].d)));save();ensureRecurring();closeModal();render();toast("تمت الاستعادة")}catch(e){toast("تعذرت الاستعادة")}})}
+
+/* ===== change log (local only, titles only) ===== */
+const LGK="priest-log";let LGPREV=null;
+const lgMap=()=>{const m={};LISTS.forEach(l=>state[l].forEach(x=>{m[l+":"+x.id]=[x.updatedAt||0,x.deleted?1:0]}));return m};
+function logDiff(){const cur=lgMap();if(!LGPREV){LGPREV=cur;return}
+ const now=Date.now(),ents=[];
+ LISTS.forEach(l=>state[l].forEach(x=>{const k=l+":"+x.id,pv=LGPREV[k],recent=now-(x.updatedAt||0)<15000;if(!recent)return;
+  if(!pv){if(!x.parent&&!x.deleted)ents.push(["add",l,x])}
+  else if(pv[1]!==(x.deleted?1:0))ents.push([x.deleted?"del":"res",l,x]);
+  else if(pv[0]!==(x.updatedAt||0)&&!x.deleted)ents.push(["edit",l,x])}));
+ LGPREV=cur;if(!ents.length)return;
+ let a=[];try{a=JSON.parse(localStorage.getItem(LGK)||"[]")}catch(e){}
+ ents.forEach(([act,l,x])=>a.push({at:now,act,l,t:String(x.title||"").slice(0,80)}));
+ a=a.slice(-200);try{localStorage.setItem(LGK,JSON.stringify(a))}catch(e){}}
+function logDialog(){let a=[];try{a=JSON.parse(localStorage.getItem(LGK)||"[]")}catch(e){}a=a.slice().reverse();
+ const AL={add:"إضافة",edit:"تعديل",del:"حذف",res:"استعادة"},lab=l=>{const z=SECTIONS.find(q=>q.list===l);return z?z.single:l};
+ openModal(`<h3>📜 سجل التغييرات</h3><p class="muted sm">آخر ٢٠٠ تغيير على هذا الجهاز (العناوين فقط). لا يُرفع إلى أي مكان. للتراجع عن حذف استخدم المحذوفات.</p><div class="list">${a.map(e=>`<div class="trow"><div class="tt">${AL[e.act]||e.act}: ${esc(e.t||"(بدون عنوان)")}<small class="muted" style="display:block">${esc(lab(e.l))} · ${esc(new Date(e.at).toLocaleString("ar-EG"))}</small></div></div>`).join("")||'<div class="muted sm">لا توجد تغييرات مسجلة بعد.</div>'}</div><div class="actions"><button class="btn" data-close>إغلاق</button></div>`)}
+setTimeout(()=>{if(!LGPREV)LGPREV=lgMap()},0);
 function quickAdd(){
  openModal(`<h3>إضافة سريعة</h3><div class="list">${SECTIONS.filter(s=>s.list).map(s=>`<button class="btn" data-q="${s.list}">+ ${s.single}</button>`).join("")}</div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
@@ -935,8 +953,8 @@ async function calSync(btn){
 
 /* ---------- backup / theme / install ---------- */
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
