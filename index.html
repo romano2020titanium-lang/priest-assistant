@@ -115,6 +115,8 @@ textarea{min-height:80px;resize:vertical}
 .trow .btn{padding:4px 10px;font-size:12px}
 .today{background:var(--surface);border:1px solid var(--brand);border-radius:16px;padding:12px 14px;margin-bottom:14px}.today h3{margin:0 0 6px;font-size:15px;color:var(--accent-text)}
 .srch-r{padding:8px 0;border-top:1px solid var(--border);cursor:pointer}.srch-r small{color:var(--muted);display:block}
+.foot{margin:28px 0 8px;text-align:center;color:var(--muted);font-size:12px;padding-bottom:70px}
+@media(min-width:821px){.foot{padding-bottom:0}}
 </style></head><body>
 <div class="layout">
  <aside class="side">
@@ -132,6 +134,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
+ <footer class="foot">Powered by: الأب شربل سمير</footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -145,10 +148,13 @@ const SECTIONS=[
  {id:"retreats",label:"النهضات",ic:"✦",list:"retreats",single:"نهضة",people:"المتكلم / الضيف",dated:true,end:true},
  {id:"liturgies",label:"القداسات",ic:"♱",list:"liturgies",single:"قداس",people:"الكاهن / الخادم",dated:true},
  {id:"tasks",label:"المهام اليومية",ic:"✔",list:"tasks",single:"مهمة",people:"الشخص / الأسرة",dated:true,task:true},
+ {id:"prayers",label:"طلبات الصلاة",ic:"🙏",list:"prayers",single:"طلب صلاة",dated:false},
+ {id:"needs",label:"احتياجات الأسر",ic:"🤝",list:"needs",single:"احتياج",dated:false},
  {id:"people",label:"المخدومين",ic:"👥",list:"people",single:"شخص",dated:false},
+ {id:"counsel",label:"الاعتراف والإرشاد",ic:"🔒"},
  {id:"reports",label:"تقارير",ic:"▤"}
 ];
-const LISTS=["services","meetings","retreats","liturgies","tasks","people"];
+const LISTS=["services","meetings","retreats","liturgies","tasks","people","prayers","needs"];
 const STORE="priest-assistant-v1",CFG="priest-sync-config",META="priest-sync-meta";
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -173,7 +179,7 @@ function counts(){const t=todayISO();return{
  retreats:live("retreats").filter(x=>(x.endDate||x.date||"9")>=t).length,
  liturgies:live("liturgies").filter(x=>(x.date||"9")>=t).length,
  tasks:live("tasks").filter(x=>x.status!=="done").length,
- people:live("people").length}}
+ people:live("people").length,prayers:live("prayers").filter(x=>x.status!=="answered").length,needs:live("needs").filter(x=>x.status!=="covered").length}}
 function renderNav(){
  const c=counts();
  $("#tabs").innerHTML=SECTIONS.map(s=>`<button class="tab ${ui.tab===s.id?"on":""}" data-tab="${s.id}"><span class="ic">${s.ic}</span>${s.label}${s.list?`<span class="n">${c[s.list]}</span>`:""}</button>`).join("");
@@ -232,6 +238,8 @@ function quickAdd(){
 function renderSection(sec){
  if(sec.id==="services")return renderServices(sec);
  if(sec.id==="people")return renderPeople(sec);
+ if(SIMPLE[sec.id])return renderSimple(sec);
+ if(sec.id==="counsel")return renderCounsel(sec);
  if(sec.id==="reports")return renderReports(sec);
  let items=live(sec.list),t=todayISO();
  let chips="";
@@ -355,7 +363,8 @@ function rpCompute(){
  const doneDay=x=>x.doneAt||x.date||"";
  const tasks=live("tasks"),visitsAll=tasks.filter(x=>x.category==="visit");
  const visits=visitsAll.filter(x=>inR(x.lastContacted,s,e)||(x.status==="done"&&inR(doneDay(x),s,e)));
- const people=[...new Set(visits.map(x=>(x.people||x.title||"").trim()).filter(Boolean))];
+ const pv=live("people").filter(p=>inR(p.lastVisit,s,e));
+ const people=[...new Set(visits.map(x=>(x.people||x.title||"").trim()).concat(pv.map(p=>p.title)).filter(Boolean))];
  const gen=tasks.filter(x=>x.category!=="visit");
  const tDone=gen.filter(x=>x.status==="done"&&inR(doneDay(x),s,e)),tPend=gen.filter(x=>x.status!=="done"&&x.date&&x.date<=e&&(x.date>=s||x.date<today));
  const vPend=visitsAll.filter(x=>x.status!=="done"&&inR(x.date,s,e));
@@ -364,9 +373,9 @@ function rpCompute(){
  const ret=live("retreats").filter(x=>x.date&&x.date<=e&&(x.endDate||x.date)>=s&&x.date<=today);
  const lit=live("liturgies").filter(x=>inR(x.date,s,e)&&x.date<=today);
  const svc=live("services").map(sv=>{const w=(sv.weeks||[]).filter(w=>w.week&&w.week<=e&&addDays(w.week,6)>=s);const r=w.filter(x=>x.rating);return{sv,w,n:w.length,done:w.filter(x=>x.done).length,avg:r.length?(r.reduce((a,x)=>a+Number(x.rating),0)/r.length):0,notes:w.map(x=>x.notes).filter(Boolean)}}).filter(x=>x.n);
- return{s,e,title,visits,people,tDone,tPend,vPend,meet,meetNext,ret,lit,svc}}
+ return{s,e,title,visits,pv,people,tDone,tPend,vPend,meet,meetNext,ret,lit,svc}}
 function rpText(r){const L=[`تقرير ${({day:"يومي",week:"أسبوعي",month:"شهري"})[rp.mode]} - ${r.title}`,"مساعد الكاهن الذكي",""];
- L.push(`الافتقادات: ${r.visits.length} (عدد الأشخاص: ${r.people.length})`);if(r.people.length)L.push("  "+r.people.join("، "));
+ L.push(`الافتقادات: ${r.visits.length+r.pv.length} (عدد الأشخاص: ${r.people.length})`);if(r.people.length)L.push("  "+r.people.join("، "));
  L.push(`الاجتماعات: ${r.meet.length}`);r.meet.forEach(x=>L.push("  - "+x.title));
  L.push(`النهضات: ${r.ret.length}`);r.ret.forEach(x=>L.push("  - "+x.title));
  L.push(`القداسات: ${r.lit.length}`);r.lit.forEach(x=>L.push("  - "+x.title));
@@ -382,8 +391,8 @@ function renderReports(sec){
  $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="rpShare">مشاركة</button><button class="btn" id="rpPrint">طباعة / PDF</button></div></div>
  <div class="chips">${[["day","يومي"],["week","أسبوعي"],["month","شهري"]].map(([k,l])=>`<button class="chip ${rp.mode===k?"on":""}" data-rm="${k}">${l}</button>`).join("")}</div>
  <div class="rp-nav"><button class="btn sm" id="rpP">→ السابق</button><div class="ttl">${esc(r.title)}</div><button class="btn sm" id="rpN">التالي ←</button><button class="btn sm" id="rpT">اليوم</button></div>
- <div class="rp-grid">${box(r.visits.length,"افتقادات تمت")}${box(r.people.length,"أشخاص تم افتقادهم")}${box(r.meet.length,"اجتماعات")}${box(r.ret.length,"نهضات")}${box(r.lit.length,"قداسات")}${box(r.tDone.length+" / "+r.tPend.length,"مهام: منجزة / معلّقة")}</div>
- ${sect("الافتقادات",list(r.visits,x=>`<span>${esc(x.people||x.title)}</span><span class="muted">${esc(fmtDate(x.lastContacted||x.doneAt||x.date,{day:"numeric",month:"short"}))}</span>`)+(r.vPend.length?`<div class="muted sm">معلّقة في هذه الفترة: ${r.vPend.length}</div>`:""))}
+ <div class="rp-grid">${box(r.visits.length+r.pv.length,"افتقادات تمت")}${box(r.people.length,"أشخاص تم افتقادهم")}${box(r.meet.length,"اجتماعات")}${box(r.ret.length,"نهضات")}${box(r.lit.length,"قداسات")}${box(r.tDone.length+" / "+r.tPend.length,"مهام: منجزة / معلّقة")}</div>
+ ${sect("الافتقادات",list(r.visits.concat(r.pv.map(p=>({people:p.title,lastContacted:p.lastVisit}))),x=>`<span>${esc(x.people||x.title)}</span><span class="muted">${esc(fmtDate(x.lastContacted||x.doneAt||x.date,{day:"numeric",month:"short"}))}</span>`)+(r.vPend.length?`<div class="muted sm">معلّقة في هذه الفترة: ${r.vPend.length}</div>`:""))}
  ${sect("الاجتماعات",list(r.meet,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`)+(r.meetNext.length?`<div class="muted sm">قادمة: ${r.meetNext.length}</div>`:""))}
  ${sect("النهضات",list(r.ret,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("القداسات",list(r.lit,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
@@ -402,6 +411,7 @@ function closeModal(){const m=$("#modal");if(m)m.remove()}
 function openForm(list,id,pre){
  if(list==="services")return openService(id);
  if(list==="people")return openPerson(id);
+ if(SIMPLE[list])return openSimple(list,id);
  const sec=SECTIONS.find(s=>s.list===list);
  const it=id?state[list].find(x=>x.id===id):Object.assign({date:sec.dated&&!sec.task?"":(sec.task?todayISO():""),priority:"normal",status:"pending",category:"general"},pre||{});
  const f=(k,label,type="text",extra="")=>`<label>${label}</label><input type="${type}" name="${k}" value="${esc(it[k]||"")}" ${extra}>`;
@@ -507,6 +517,68 @@ function tplDialog(){
 }
 
 
+
+/* ---------- simple lists: prayers, needs ---------- */
+const SIMPLE={
+ prayers:{open:"مستمرة",closed:"تمت الاستجابة",cv:"answered",f:[["title","الموضوع"],["people","من أجل (اسم / أسرة)"],["date","التاريخ","date"],["notes","تفاصيل","ta"]]},
+ needs:{open:"مطلوب",closed:"تمت التغطية",cv:"covered",f:[["title","الأسرة / الشخص"],["notes","الاحتياج (طعام، علاج، إيجار...)","ta"],["amount","المبلغ التقريبي (ج.م)","number"],["phone","هاتف (في جهازك والـ Sheet فقط)","tel"],["date","التاريخ","date"]]}};
+let simpleF={prayers:"open",needs:"open"};
+function renderSimple(sec){
+ const S=SIMPLE[sec.id],all=live(sec.id);
+ const fl=[["open",S.open],["closed",S.closed],["all","الكل"]];
+ let items=all.filter(x=>simpleF[sec.id]==="all"||(simpleF[sec.id]==="closed")===(x.status===S.cv));
+ items.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const tot=sec.id==="needs"?all.filter(x=>x.status!==S.cv).reduce((a,x)=>a+(Number(x.amount)||0),0):0;
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><button class="btn primary" id="addBtn">+ إضافة</button></div>
+ <div class="chips">${fl.map(([k,l])=>`<button class="chip ${simpleF[sec.id]===k?"on":""}" data-sf2="${k}">${l}</button>`).join("")}</div>${tot?`<p class="muted sm">إجمالي الاحتياجات المفتوحة التقريبي: ${tot} ج.م</p>`:""}
+ <div class="list">${items.map(x=>`<div class="card ${x.status===S.cv?"done":""}" data-sid="${x.id}"><div class="body"><div class="t">${esc(x.title)}</div><div class="meta">${x.people?`<span>👤 ${esc(x.people)}</span>`:""}${x.date?`<span>${esc(fmtDate(x.date,{day:"numeric",month:"short",year:"numeric"}))}</span>`:""}${x.amount?`<span>${esc(x.amount)} ج.م</span>`:""}</div>${x.notes?`<div class="meta">${esc(x.notes)}</div>`:""}</div><button class="btn sm" data-sflip="${x.id}">${x.status===S.cv?"إعادة فتح":"✓ "+S.closed}</button></div>`).join("")||`<div class="empty">لا توجد عناصر هنا بعد.</div>`}</div>`;
+ document.querySelectorAll("[data-sf2]").forEach(b=>b.onclick=()=>{simpleF[sec.id]=b.dataset.sf2;render()});
+ $("#addBtn").onclick=()=>openSimple(sec.id,null);
+ document.querySelectorAll("[data-sid]").forEach(c=>c.onclick=e=>{if(e.target.closest("button"))return;openSimple(sec.id,c.dataset.sid)});
+ document.querySelectorAll("[data-sflip]").forEach(b=>b.onclick=()=>{const x=state[sec.id].find(y=>y.id===b.dataset.sflip);x.status=x.status===S.cv?"open":S.cv;x.updatedAt=Date.now();save();render()})}
+function openSimple(list,id){
+ const S=SIMPLE[list],sec=SECTIONS.find(s=>s.list===list),p=id?state[list].find(x=>x.id===id):{date:todayISO()};
+ const fh=S.f.map(([k,l,ty])=>ty==="ta"?`<label>${l}</label><textarea name="${k}">${esc(p[k]||"")}</textarea>`:`<label>${l}</label><input type="${ty||"text"}" name="${k}" value="${esc(p[k]||"")}" ${k==="title"?"required":""} ${ty==="tel"?'dir="ltr"':""}>`).join("");
+ const m=openModal(`<h3>${id?"تعديل":"إضافة"}: ${sec.single}</h3><form id="f">${fh}<label>الحالة</label><select name="status"><option value="open">${S.open}</option><option value="${S.cv}">${S.closed}</option></select><div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`);
+ const form=$("#f",m);form.status.value=p.status||"open";
+ form.onsubmit=e=>{e.preventDefault();const o=id?p:{id:uid(),createdAt:Date.now()};S.f.forEach(([k])=>o[k]=form[k].value.trim());o.status=form.status.value;if(!o.title)return;o.updatedAt=Date.now();if(!id)state[list].push(o);save();closeModal();render();toast("تم الحفظ")};
+ if(id)$("#delBtn",m).onclick=()=>{if(confirm("حذف هذا العنصر؟")){p.deleted=true;p.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}}}
+/* ---------- counsel notes: device only + separate PIN ---------- */
+const PIN2="priest-pin2",CNS="priest-counsel";let cUntil=0;
+const cData=()=>{try{return JSON.parse(localStorage.getItem(CNS)||"[]")}catch(e){return[]}};
+const cSave=a=>localStorage.setItem(CNS,JSON.stringify(a));
+function renderCounsel(sec){
+ const c=(()=>{try{return JSON.parse(localStorage.getItem(PIN2)||"null")}catch(e){return null}})();
+ if(Date.now()<cUntil&&c){cUntil=Date.now()+120000;return counselList(sec)}
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2></div><div class="today" style="max-width:380px"><p class="muted sm">${c?"أدخل الرقم السري الخاص بهذا القسم":"هذا القسم مقفول برقم سري مستقل. الملاحظات تُحفظ في هذا الجهاز فقط ولا تُرفع للـ Sheet ولا تُزامَن. اختر رقمًا (4 إلى 8 أرقام):"}</p><input id="cp" type="password" inputmode="numeric" maxlength="8" style="text-align:center;font-size:20px;letter-spacing:6px"><div class="actions"><button class="btn primary" id="cgo">${c?"فتح":"تفعيل"}</button></div></div>`;
+ $("#cgo").onclick=async()=>{const v=$("#cp").value;if(!/^\d{4,8}$/.test(v)){toast("4 إلى 8 أرقام");return}
+  if(!c){const salt=uid()+uid();localStorage.setItem(PIN2,JSON.stringify({salt,hash:await hashPin(v,salt)}));cUntil=Date.now()+120000;render()}
+  else if(await hashPin(v,c.salt)===c.hash){cUntil=Date.now()+120000;render()}else{toast("رقم خاطئ");$("#cp").value=""}}}
+function counselList(sec){
+ const L=cData().filter(x=>!x.deleted).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="cLock">قفل الآن</button><button class="btn primary" id="addBtn">+ ملاحظة</button></div></div><p class="muted sm">محفوظة في هذا الجهاز فقط، غير مرفوعة وغير مُزامَنة.</p>
+ <div class="list">${L.map(x=>`<div class="card" data-cid="${x.id}"><div class="body"><div class="t">${esc(x.title)}</div><div class="meta"><span>${esc(fmtDate(x.date,{day:"numeric",month:"short",year:"numeric"}))}</span></div><div class="meta">${esc(x.notes||"")}</div></div></div>`).join("")||`<div class="empty">لا توجد ملاحظات.</div>`}</div>`;
+ $("#cLock").onclick=()=>{cUntil=0;render()};
+ const edit=id=>{const a=cData(),p=id?a.find(x=>x.id===id):{date:todayISO()};
+  const m=openModal(`<h3>${id?"تعديل":"إضافة"} ملاحظة</h3><form id="f"><label>الاسم / الرمز</label><input name="title" required value="${esc(p.title||"")}"><label>التاريخ</label><input type="date" name="date" value="${esc(p.date||"")}"><label>الملاحظات</label><textarea name="notes" style="min-height:140px">${esc(p.notes||"")}</textarea><div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`);
+  const f=$("#f",m);f.onsubmit=e=>{e.preventDefault();const o=id?p:{id:uid()};o.title=f.title.value.trim();o.date=f.date.value;o.notes=f.notes.value;o.updatedAt=Date.now();if(!id)a.push(o);cSave(a);closeModal();render()};
+  if(id)$("#delBtn",m).onclick=()=>{if(confirm("حذف هذه الملاحظة؟")){p.deleted=true;cSave(a);closeModal();render()}}};
+ $("#addBtn").onclick=()=>edit(null);
+ document.querySelectorAll("[data-cid]").forEach(c=>c.onclick=()=>edit(c.dataset.cid))}
+/* ---------- fasting (approximate Coptic calendar) ---------- */
+function orthEaster(y){const a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,mo=Math.floor((d+e+114)/31),da=(d+e+114)%31+1;const x=new Date(y,mo-1,da+13,12);return iso(x)}
+function fastInfo(ds){
+ const y=Number(ds.slice(0,4)),E=orthEaster(y),df=(a,b)=>Math.round((new Date(a+"T12:00:00")-new Date(b+"T12:00:00"))/864e5),k=df(ds,E),md=ds.slice(5),dow=new Date(ds+"T12:00:00").getDay();
+ if(k>=-55&&k<=-1)return"الصوم الكبير"+(k>=-7?" (أسبوع الآلام)":"");
+ if(k>=-69&&k<=-67)return"صوم يونان";
+ if(k===0)return"";
+ const pent=k+0, apEnd=md<="07-11";
+ if(k>=51&&md<="07-11")return"صوم الرسل";
+ if(md>="08-07"&&md<="08-21")return"صوم السيدة العذراء";
+ if(md>="11-25"||md<="01-06")return"صوم الميلاد";
+ if((dow===3||dow===5)&&!(k>=0&&k<=49))return dow===3?"صوم الأربعاء":"صوم الجمعة";
+ return""}
+
 /* ---------- today ---------- */
 function daysTo(md,from){ // days until next occurrence of month-day
  if(!md)return null;const p=md.slice(-5).split("-");const f=new Date(from+"T12:00:00");let d=new Date(f.getFullYear(),Number(p[0])-1,Number(p[1]),12);if(d<f)d=new Date(f.getFullYear()+1,Number(p[0])-1,Number(p[1]),12);return Math.round((d-f)/864e5)}
@@ -519,7 +591,8 @@ function todayBlock(){
  ["meetings","retreats","liturgies"].forEach(l=>live(l).filter(x=>x.date&&x.date<=t&&(x.endDate||x.date)>=t).forEach(x=>rows.push({l,x})));
  const bd=live("people").map(p=>({p,b:daysTo(p.birthday,t),n:daysTo(p.nameDay,t)})).filter(o=>o.b!==null&&o.b<=7||o.n!==null&&o.n<=7);
  const due=dueList().slice(0,3);
- return `<div class="today"><h3>اليوم</h3>${rows.map(({l,x,late})=>`<div class="trow"><div class="tt">${esc(x.title)}${x.time?" · "+esc(fmtTime(x.time)):""} ${late?`<span class="badge" style="color:var(--urgent)">متأخرة ${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`:""}<small class="muted" style="display:block">${l==="tasks"?"مهمة":SECTIONS.find(s=>s.list===l).single}</small></div>${l==="tasks"?`<button class="btn" data-tdone="${x.id}">✓ تمت</button>`:""}<button class="btn" data-tmove="${l}:${x.id}">غدًا</button></div>`).join("")||`<div class="muted sm">لا شيء مجدول اليوم 🙏</div>`}
+ const fs=fastInfo(t);
+ return `<div class="today"><h3>اليوم</h3>${fs?`<div class="muted sm" style="margin-bottom:6px">🕊 يوم صيام: ${fs} <span style="opacity:.7">(تقدير حسب التقويم القبطي، راجع تقويم الكنيسة)</span></div>`:""}${rows.map(({l,x,late})=>`<div class="trow"><div class="tt">${esc(x.title)}${x.time?" · "+esc(fmtTime(x.time)):""} ${late?`<span class="badge" style="color:var(--urgent)">متأخرة ${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`:""}<small class="muted" style="display:block">${l==="tasks"?"مهمة":SECTIONS.find(s=>s.list===l).single}</small></div>${l==="tasks"?`<button class="btn" data-tdone="${x.id}">✓ تمت</button>`:""}<button class="btn" data-tmove="${l}:${x.id}">غدًا</button></div>`).join("")||`<div class="muted sm">لا شيء مجدول اليوم 🙏</div>`}
  ${bd.length?`<div class="muted sm" style="margin-top:8px">🎂 ${bd.map(o=>esc(o.p.title)+(o.b!==null&&o.b<=7?(o.b===0?" (عيد ميلاد اليوم)":" (ميلاد بعد "+o.b+" يوم)"):" (عيد الشفيع بعد "+o.n+" يوم)")).join("، ")}</div>`:""}
  ${due.length?`<div class="muted sm" style="margin-top:6px">يستحقون افتقادًا: ${due.map(o=>esc(o.p.title)+(o.lv?"":" (لم يُفتقد)")).join("، ")}</div>`:""}</div>`}
 function bindToday(){
