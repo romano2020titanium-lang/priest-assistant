@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.5 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.6 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -267,6 +267,23 @@ function rdCard(){const j=rdData||rdCache();if(!j)return`<div class="today"><h3>
  return`<div class="today"><h3>قراءات اليوم${j.copticDate?" · "+esc(String(j.copticDate)):""}</h3>${secs||`<div class="muted sm">لا توجد قراءات.</div>`}<div class="muted sm" style="margin-top:6px">المصدر: katameros.app (الترجمة: فان دايك)</div></div>`}
 function rdLoad(){if(rdCache()||!navigator.onLine){const b=$("#rdBox");if(b&&rdCache())b.innerHTML=rdCard();return}
  fetch("https://api.katameros.app/readings/gregorian/"+dmy(new Date())+"?languageId=3").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{rdData=j;try{localStorage.setItem(RDK,JSON.stringify({d:dmy(new Date()),j}))}catch(e){}const b=$("#rdBox");if(b)b.innerHTML=rdCard()}).catch(()=>{const m=$("#rdMsg");if(m)m.textContent="تعذر تحميل القراءات الآن (تحتاج اتصالًا)."})}
+
+/* ===== recurring choices + trash ===== */
+function rChoice(msg,cb){const m=openModal(`<h3>${msg}</h3><div class="list"><button class="btn" data-c="one">هذه المرة فقط</button><button class="btn" data-c="after">هذه وما بعدها</button><button class="btn" data-c="all">كل المرات</button></div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);m.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{closeModal();cb(b.dataset.c)})}
+const seriesKey=it=>it.parent||it.id;
+const seriesItems=(l,it)=>state[l].filter(x=>x.id===seriesKey(it)||x.parent===seriesKey(it));
+function recurDelete(l,it){rChoice("حذف عنصر متكرر: ماذا تحذف؟",c=>{
+ const base=state[l].find(x=>x.id===seriesKey(it)),now=Date.now(),d=it.date||"";const kill=x=>{x.deleted=true;x.updatedAt=now};
+ if(c==="one"){kill(it);if(!it.parent)it.seriesOn=1}
+ else if(c==="after"){seriesItems(l,it).filter(x=>(x.date||"")>=d).forEach(x=>{kill(x);x.seriesOn=0});if(base){base.until=addDays(d,-1);base.updatedAt=now}}
+ else{seriesItems(l,it).forEach(x=>{kill(x);x.seriesOn=0})}
+ save();render();toast("تم الحذف (يمكن استعادته من المزيد > المحذوفات)")})}
+function trashDialog(){const rows=[];LISTS.forEach(l=>state[l].filter(x=>x.deleted).forEach(x=>rows.push([l,x])));rows.sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+ const lab=l=>{const s=SECTIONS.find(z=>z.list===l);return s?s.single:l};
+ const m=openModal(`<h3>🗑 المحذوفات</h3><p class="muted sm">لا يُمحى شيء نهائيًا. اضغط استعادة لإرجاع العنصر.</p><div class="list">${rows.slice(0,150).map(([l,x],i)=>`<div class="trow"><div class="tt">${esc(x.title||"(بدون عنوان)")}<small class="muted" style="display:block">${esc(lab(l))}${x.date?" · "+esc(x.date):""}${x.parent||x.recur?" · متكرر":""}</small></div><button class="btn" data-rs="${i}">استعادة</button>${x.parent||x.recur?`<button class="btn" data-rss="${i}">كل السلسلة</button>`:""}</div>`).join("")||'<div class="muted sm">لا توجد عناصر محذوفة.</div>'}</div><div class="actions"><button class="btn" data-close>إغلاق</button></div>`);
+ const now=()=>Date.now();
+ m.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{const [l,x]=rows[+b.dataset.rs];x.deleted=false;x.updatedAt=now();save();ensureRecurring();closeModal();render();toast("تمت الاستعادة")});
+ m.querySelectorAll("[data-rss]").forEach(b=>b.onclick=()=>{const [l,x]=rows[+b.dataset.rss];seriesItems(l,x).forEach(y=>{y.deleted=false;y.seriesOn=0;y.updatedAt=now();if(!y.parent)delete y.until});save();ensureRecurring();closeModal();render();toast("تمت استعادة السلسلة")})}
 function quickAdd(){
  openModal(`<h3>إضافة سريعة</h3><div class="list">${SECTIONS.filter(s=>s.list).map(s=>`<button class="btn" data-q="${s.list}">+ ${s.single}</button>`).join("")}</div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
@@ -499,11 +516,12 @@ function openForm(list,id,pre){
  ["category","priority","status","recur"].forEach(k=>{if(form[k])form[k].value=it[k]||(k==="recur"?"":k==="category"?"general":k==="priority"?"normal":"pending")});
  const vf=$("#visitFields",m);if(vf){const sh=()=>vf.classList.toggle("hidden",form.category.value!=="visit");form.category.onchange=sh;sh()}
  form.onsubmit=e=>{e.preventDefault();
-  const o=id?it:{id:uid(),createdAt:Date.now()};
+  const o=id?it:{id:uid(),createdAt:Date.now()};const RF=["title","time","place","people","notes"],pre=id?RF.map(k=>it[k]||"").join("|"):"";
   ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});
   if(!o.title)return;if(list==="tasks"){if(o.status==="done"&&!o.doneAt)o.doneAt=todayISO();if(o.status!=="done")o.doneAt=""}o.updatedAt=Date.now();
-  if(!id)state[list].push(o);save();ensureRecurring();closeModal();render();toast("تم الحفظ")};
- if(id)$("#delBtn").onclick=()=>{if(confirm("حذف هذا العنصر؟")){it.deleted=true;it.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}};
+  if(!id)state[list].push(o);save();ensureRecurring();closeModal();render();toast("تم الحفظ");
+  if(id&&(o.recur||o.parent)&&RF.map(k=>o[k]||"").join("|")!==pre)setTimeout(()=>rChoice("تطبيق هذا التعديل على:",c=>{if(c==="one")return;seriesItems(list,o).filter(x=>x.id!==o.id&&!x.deleted&&(c==="all"||x.date>o.date)).forEach(x=>{RF.forEach(f=>x[f]=o[f]);x.updatedAt=Date.now()});save();render();toast("تم التطبيق")}),60)};
+ if(id)$("#delBtn").onclick=()=>{if(it.recur||it.parent){recurDelete(list,it);return}if(confirm("حذف هذا العنصر؟")){it.deleted=true;it.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}};
 }
 
 /* ---------- sync (Google Sheet via Apps Script) ---------- */
@@ -718,10 +736,10 @@ function bindToday(){
 function ensureRecurring(){
  const t=todayISO(),horizon=addDays(t,35);let made=0;
  ["meetings","liturgies","tasks"].forEach(l=>{
-  state[l].filter(x=>x.recur&&!x.parent&&!x.deleted&&x.date).forEach(b=>{
+  state[l].filter(x=>x.recur&&!x.parent&&(!x.deleted||x.seriesOn)&&x.date).forEach(b=>{
    let d=b.date,k=0;
    while(k++<400){const o=new Date(d+"T12:00:00");if(b.recur==="daily")o.setDate(o.getDate()+1);else if(b.recur==="weekly")o.setDate(o.getDate()+7);else{const day=new Date(b.date+"T12:00:00").getDate();o.setMonth(o.getMonth()+1,1);const last=new Date(o.getFullYear(),o.getMonth()+1,0).getDate();o.setDate(Math.min(day,last))}
-    d=iso(o);if(d>horizon)break;if(d<t)continue;
+    d=iso(o);if(d>horizon)break;if(b.until&&d>b.until)break;if(d<t)continue;
     const id=b.id+"@"+d;if(state[l].some(x=>x.id===id))continue;
     const c=Object.assign({},b,{id,parent:b.id,recur:"",date:d,createdAt:Date.now(),updatedAt:Date.now()});
     if(l==="tasks"){c.status="pending";c.doneAt="";}
@@ -890,8 +908,8 @@ async function calSync(btn){
 
 /* ---------- backup / theme / install ---------- */
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#alB",m).onclick=alertDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
