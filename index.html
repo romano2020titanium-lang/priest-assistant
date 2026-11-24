@@ -78,6 +78,28 @@ textarea{min-height:80px;resize:vertical}
 }
 .mtop{display:none;align-items:center;justify-content:space-between;margin-bottom:12px}
 .mtop .brand h1{font-size:16px}.mtop .logo{width:38px;height:38px;font-size:20px}
+
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px}
+.pcard.overdue{border-color:var(--urgent)}
+.pcard .p-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pcard .p-name{font-size:16px;font-weight:700;cursor:pointer;overflow-wrap:anywhere}
+.pcard .meta{margin-top:4px}
+.pbar{flex:1;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--brand)}
+.p-prog{display:flex;align-items:center;gap:10px}.p-prog b{min-width:44px}
+.p-next{background:var(--surface-2);border-radius:10px;padding:8px 10px;font-size:13px}.p-next span{color:var(--muted);font-size:11px;display:block}
+.ms{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0}.ms .check{width:18px;height:18px;margin:0;border-width:2px}
+.ms.done span{text-decoration:line-through;color:var(--muted)}.ms.done .check,.ms .check.on{background:var(--done);border-color:var(--done)}
+.wk{border-top:1px solid var(--border);padding-top:8px}.wk h4{margin:0 0 6px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.wrow{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:4px 0;cursor:pointer}
+.wrow .w-d{flex:none;min-width:84px;color:var(--muted)}.wrow .w-n{flex:1;overflow-wrap:anywhere}
+.stars{color:var(--important);letter-spacing:1px;white-space:nowrap}
+.ms-edit,.wk-edit{display:flex;gap:6px;align-items:center;margin-bottom:6px}.ms-edit input[type=text],.ms-edit .inp{flex:1}
+.wk-edit{flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:8px}
+.wk-edit .inp{flex:1;min-width:110px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg label{margin:0;cursor:pointer}.seg input{display:none}.seg span{display:block;padding:6px 12px;border-radius:99px;border:1px solid var(--border);font-size:13px}.seg input:checked+span{background:var(--brand);color:var(--brand-ink);font-weight:700;border-color:transparent}
+.chip2{font-size:11px;padding:1px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface-2)}
+.chip2.red{color:var(--urgent);border-color:var(--urgent)}
 </style></head><body>
 <div class="layout">
  <aside class="side">
@@ -189,6 +211,7 @@ function quickAdd(){
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
 }
 function renderSection(sec){
+ if(sec.id==="services")return renderServices(sec);
  let items=live(sec.list),t=todayISO();
  let chips="";
  if(sec.task){
@@ -213,10 +236,93 @@ function renderSection(sec){
  bindCards($("#view"));
 }
 
+
+/* ---------- services: project-style with weekly records ---------- */
+const SST=[{id:"active",name:"جارية",color:"#2ecc71"},{id:"planning",name:"تخطيط",color:"#f5a524"},{id:"paused",name:"متوقفة",color:"#8a978e"},{id:"done",name:"منتهية",color:"#4da3ff"}];
+let svFilter="open";
+const svProg=s=>{const m=s.milestones||[];return m.length?Math.round(m.filter(x=>x.done).length/m.length*100):(Number(s.progress)||0)};
+const stars=n=>n?"★".repeat(n)+"☆".repeat(5-n):"";
+function weekStart(d){const x=d?new Date(d+"T12:00:00"):new Date();x.setHours(12);x.setDate(x.getDate()-((x.getDay()+1)%7));return iso(x)}
+function svAvg(s){const r=(s.weeks||[]).filter(w=>w.rating);return r.length?(r.reduce((a,w)=>a+Number(w.rating),0)/r.length).toFixed(1):null}
+function renderServices(sec){
+ const all=live("services"),open=all.filter(s=>s.status!=="done");
+ const opts=[["open","المفتوحة",open.length],["all","الكل",all.length],...SST.map(s=>[s.id,s.name,all.filter(x=>(x.status||"active")===s.id).length])];
+ let list=all.filter(s=>svFilter==="all"?true:svFilter==="open"?s.status!=="done":(s.status||"active")===svFilter);
+ const so={active:0,planning:1,paused:2,done:3};list.sort((a,b)=>(so[a.status||"active"]-so[b.status||"active"])||(a.title||"").localeCompare(b.title||""));
+ const avg=open.length?Math.round(open.reduce((a,s)=>a+svProg(s),0)/open.length):0;
+ const thisWk=weekStart();const logged=open.filter(s=>(s.weeks||[]).some(w=>w.week===thisWk)).length;
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><button class="btn primary" id="addBtn">+ إضافة خدمة</button></div>
+ <div class="stats"><div class="stat"><div class="v">${all.length}</div><div class="l">الإجمالي</div></div><div class="stat"><div class="v">${all.filter(s=>(s.status||"active")==="active").length}</div><div class="l">جارية</div></div><div class="stat"><div class="v">${avg}%</div><div class="l">متوسط التقدم</div></div><div class="stat"><div class="v">${logged}/${open.length}</div><div class="l">سُجّل هذا الأسبوع</div></div></div>
+ <div class="chips">${opts.map(([k,l,n])=>`<button class="chip ${svFilter===k?"on":""}" data-sf="${k}">${l} ${n}</button>`).join("")}</div>
+ <div class="pgrid">${list.map(svCard).join("")||`<div class="empty" style="grid-column:1/-1">لا توجد خدمات — اضغط "+ إضافة خدمة"</div>`}</div>`;
+ document.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>{svFilter=b.dataset.sf;render()});
+ $("#addBtn").onclick=()=>openService(null);
+ document.querySelectorAll(".pcard").forEach(c=>{const id=c.dataset.id;
+  c.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openService(id));
+  c.querySelectorAll("[data-ms]").forEach(b=>b.onclick=()=>{const s=state.services.find(x=>x.id===id),m=s.milestones.find(x=>x.id===b.dataset.ms);m.done=!m.done;s.updatedAt=Date.now();save();render()});
+  c.querySelectorAll("[data-wk]").forEach(b=>b.onclick=()=>openService(id,b.dataset.wk));
+  c.querySelectorAll("[data-addwk]").forEach(b=>b.onclick=()=>openService(id,"new"))});
+}
+function svCard(s){
+ const st=SST.find(x=>x.id===(s.status||"active"))||SST[0],pr=svProg(s),ms=s.milestones||[];
+ const wk=[...(s.weeks||[])].sort((a,b)=>(b.week||"").localeCompare(a.week||"")),av=svAvg(s);
+ let dl="";if(s.deadline){const left=Math.round((new Date(s.deadline+"T12:00:00")-new Date(todayISO()+"T12:00:00"))/864e5);dl=s.status==="done"?"":left<0?`<span class="chip2 red">متأخرة ${-left} يوم</span>`:`<span class="chip2">باقي ${left} يوم</span>`}
+ const meta=[];if(s.repeat)meta.push("🔁 "+esc(s.repeat));if(s.place)meta.push("📍 "+esc(s.place));if(s.people)meta.push("👤 "+esc(s.people));
+ return `<div class="pcard" data-id="${s.id}"><div class="p-h"><div><div class="p-name" data-edit="1">${esc(s.title)}</div><div class="meta"><span class="chip2" style="color:${st.color};border-color:${st.color}">${st.name}</span>${dl}${meta.map(m=>`<span>${m}</span>`).join("")}</div></div><button class="btn sm" data-edit="1">تعديل</button></div>
+ <div class="p-prog"><div class="pbar"><i style="width:${pr}%"></i></div><b>${pr}%</b></div>
+ ${s.nextStep&&s.status!=="done"?`<div class="p-next"><span>الخطوة الجاية</span>${esc(s.nextStep)}</div>`:""}
+ ${ms.length?`<div><div class="muted sm">المراحل ${ms.filter(m=>m.done).length}/${ms.length}</div>${ms.map(m=>`<div class="ms ${m.done?"done":""}"><button class="check ${m.done?"on":""}" data-ms="${m.id}">${m.done?"✓":""}</button><span>${esc(m.text)}</span></div>`).join("")}</div>`:""}
+ <div class="wk"><h4><span>الأداء الأسبوعي${av?` · المتوسط <span class="stars">${av}★</span>`:""}</span><button class="btn sm" data-addwk="1">+ أسبوع</button></h4>
+ ${wk.slice(0,4).map(w=>`<div class="wrow" data-wk="${w.id}"><span class="w-d">${esc(fmtDate(w.week,{day:"numeric",month:"short"}))}</span><span class="w-n">${w.done?"✓ ":""}${esc(w.notes||"")}</span><span class="stars">${stars(w.rating)}</span></div>`).join("")||`<div class="muted sm">لا توجد سجلات أسبوعية بعد</div>`}
+ ${wk.length>4?`<div class="muted sm">+ ${wk.length-4} أسابيع أقدم (داخل التعديل)</div>`:""}</div>
+ ${s.notes?`<div class="meta">${esc(s.notes)}</div>`:""}</div>`;
+}
+function openService(id,wkId){
+ const orig=id?state.services.find(x=>x.id===id):null;const it=orig?{...orig}:{status:"active",milestones:[],weeks:[]};
+ let ms=(it.milestones||[]).map(m=>({...m})),wks=(it.weeks||[]).map(w=>({...w}));
+ if(wkId==="new"){wks.push({id:uid(),week:weekStart(),rating:0,notes:"",done:true});wkId=wks[wks.length-1].id}
+ const m=openModal("");const sh=m.querySelector(".sheet");
+ function draw(){
+  sh.innerHTML=`<h3>${id?"تعديل":"إضافة"} خدمة</h3><form id="f">
+  <label>اسم الخدمة</label><input name="title" required value="${esc(it.title||"")}">
+  <label>الحالة</label><div class="seg">${SST.map(s=>`<label><input type="radio" name="status" value="${s.id}" ${(it.status||"active")===s.id?"checked":""}><span>${s.name}</span></label>`).join("")}</div>
+  <div class="row2"><div><label>التكرار</label><input name="repeat" value="${esc(it.repeat||"")}" placeholder="مثال: كل جمعة"></div><div><label>الموعد النهائي</label><input type="date" name="deadline" value="${esc(it.deadline||"")}"></div></div>
+  <label>المسؤول / الخادم</label><input name="people" value="${esc(it.people||"")}">
+  <label>المكان</label><input name="place" value="${esc(it.place||"")}">
+  <label>الخطوة الجاية</label><input name="nextStep" value="${esc(it.nextStep||"")}">
+  <label>المراحل (التقدم يُحسب منها)</label><div id="msL">${ms.map(x=>`<div class="ms-edit" data-id="${x.id}"><button type="button" class="check ${x.done?"on":""}" data-a="tg">${x.done?"✓":""}</button><input class="inp" data-a="tx" value="${esc(x.text)}"><button type="button" class="btn sm" data-a="rm">✕</button></div>`).join("")}</div>
+  <div class="ms-edit"><input class="inp" id="msN" placeholder="أضف مرحلة"><button type="button" class="btn sm" id="msA">إضافة</button></div>
+  ${ms.length?"":`<label>التقدم اليدوي: <b id="pv">${Number(it.progress)||0}%</b></label><input type="range" name="progress" min="0" max="100" step="5" value="${Number(it.progress)||0}" style="width:100%">`}
+  <label>الأداء الأسبوعي</label><div id="wkL">${[...wks].sort((a,b)=>(b.week||"").localeCompare(a.week||"")).map(w=>`<div class="wk-edit" data-id="${w.id}"><input type="date" class="inp" data-a="wd" value="${esc(w.week||"")}"><select class="inp" data-a="wr"><option value="0">بلا تقييم</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(w.rating)===n?"selected":""}>${"★".repeat(n)}</option>`).join("")}</select><button type="button" class="check ${w.done?"on":""}" data-a="wdn" title="تمت">${w.done?"✓":""}</button><button type="button" class="btn sm" data-a="wrm">✕</button><input class="inp" style="flex-basis:100%" data-a="wn" placeholder="ملاحظات الأسبوع" value="${esc(w.notes||"")}"></div>`).join("")}</div>
+  <div class="actions" style="margin:6px 0"><button type="button" class="btn sm" id="wkA">+ أسبوع جديد</button></div>
+  <label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>
+  <div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
+  const form=$("#f",sh);
+  const sync=()=>{ms.forEach(x=>{});};
+  $("#msL",sh).onclick=e=>{const b=e.target.closest("[data-a]");if(!b)return;const x=ms.find(y=>y.id===b.closest(".ms-edit").dataset.id);if(b.dataset.a==="tg")x.done=!x.done;if(b.dataset.a==="rm")ms=ms.filter(y=>y!==x);keep();draw()};
+  $("#msL",sh).oninput=e=>{if(e.target.dataset.a==="tx")ms.find(y=>y.id===e.target.closest(".ms-edit").dataset.id).text=e.target.value};
+  const addM=()=>{const v=$("#msN",sh).value.trim();if(!v)return;keep();ms.push({id:uid(),text:v,done:false});draw()};
+  $("#msA",sh).onclick=addM;$("#msN",sh).onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();addM()}};
+  $("#wkL",sh).onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const w=wks.find(y=>y.id===b.closest(".wk-edit").dataset.id);if(b.dataset.a==="wdn")w.done=!w.done;if(b.dataset.a==="wrm"&&confirm("إزالة هذا الأسبوع؟"))wks=wks.filter(y=>y!==w);keep();draw()};
+  $("#wkL",sh).oninput=e=>{const w=wks.find(y=>y.id===e.target.closest(".wk-edit").dataset.id),a=e.target.dataset.a;if(a==="wd")w.week=e.target.value;if(a==="wr")w.rating=Number(e.target.value);if(a==="wn")w.notes=e.target.value};
+  $("#wkA",sh).onclick=()=>{keep();wks.push({id:uid(),week:weekStart(),rating:0,notes:"",done:true});draw()};
+  const pr=form.progress;if(pr)pr.oninput=()=>$("#pv",sh).textContent=pr.value+"%";
+  sh.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModal);
+  function keep(){Object.keys(draft).forEach(k=>{});["title","repeat","deadline","people","place","nextStep","notes"].forEach(k=>it[k]=form[k].value);it.status=form.status.value;if(form.progress)it.progress=Number(form.progress.value)}
+  const draft={};
+  form.onsubmit=e=>{e.preventDefault();keep();const o=id?orig:{id:uid(),createdAt:Date.now()};Object.assign(o,it);
+   o.title=o.title.trim();if(!o.title)return;o.milestones=ms.filter(x=>x.text.trim()).map(x=>({...x,text:x.text.trim()}));o.weeks=wks.filter(w=>w.week);o.updatedAt=Date.now();
+   if(!id)state.services.push(o);save();closeModal();render();toast("تم الحفظ")};
+  if(id)$("#delBtn",sh).onclick=()=>{if(confirm("حذف هذه الخدمة؟")){orig.deleted=true;orig.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}};
+ }
+ draw();
+}
+
 /* ---------- modal / form ---------- */
 function openModal(h){closeModal();const m=document.createElement("div");m.className="modal";m.id="modal";m.innerHTML=`<div class="sheet">${h}</div>`;m.onclick=e=>{if(e.target===m)closeModal()};$("#modalRoot").appendChild(m);m.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeModal);return m}
 function closeModal(){const m=$("#modal");if(m)m.remove()}
 function openForm(list,id,pre){
+ if(list==="services")return openService(id);
  const sec=SECTIONS.find(s=>s.list===list);
  const it=id?state[list].find(x=>x.id===id):Object.assign({date:sec.dated&&!sec.task?"":(sec.task?todayISO():""),priority:"normal",status:"pending",category:"general"},pre||{});
  const f=(k,label,type="text",extra="")=>`<label>${label}</label><input type="${type}" name="${k}" value="${esc(it[k]||"")}" ${extra}>`;
