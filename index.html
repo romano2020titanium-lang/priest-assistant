@@ -122,7 +122,7 @@ let state=load();
 let ui={tab:"home",filter:"upcoming",taskCat:"all"};
 function save(touch){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}if(touch!==false)markDirty()}
 function live(k){return state[k].filter(x=>!x.deleted)}
-function fmtDate(d,opt){if(!d)return"";try{return new Date(d+"T12:00:00").toLocaleDateString("ar-EG",opt||{weekday:"long",day:"numeric",month:"long",year:"numeric"})}catch(e){return d}}
+function fmtDate(d,opt){if(!d)return"";try{return (d instanceof Date?d:new Date(d+"T12:00:00")).toLocaleDateString("ar-EG",opt||{weekday:"long",day:"numeric",month:"long",year:"numeric"})}catch(e){return d}}
 function fmtTime(t){if(!t)return"";const[h,m]=t.split(":").map(Number);const ap=h>=12?"م":"ص";return new Date(2000,0,1,h,m).toLocaleTimeString("ar-EG",{hour:"numeric",minute:"2-digit",hour12:true})}
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
 
@@ -174,8 +174,8 @@ function renderHome(){
  soon.sort((a,b)=>sortItems(a[1],b[1]));
  const late=live("tasks").filter(x=>x.status!=="done"&&x.date&&x.date<t);
  const todayTasks=live("tasks").filter(x=>x.status!=="done"&&x.date===t).length;
- $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}</div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks.toLocaleString("ar-EG")} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length.toLocaleString("ar-EG")} متأخرة`:""}</p></div>
- <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list].toLocaleString("ar-EG")}</div><div class="l">${s.label}</div></button>`).join("")}</div>
+ $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}</div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length} متأخرة`:""}</p></div>
+ <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list]}</div><div class="l">${s.label}</div></button>`).join("")}</div>
  ${late.length?`<h3 class="sec">مهام متأخرة</h3><div class="list" id="lateL">${late.sort(sortItems).map(i=>card(SECTIONS[5],i)).join("")}</div>`:""}
  <h3 class="sec">القادم خلال ١٤ يومًا</h3>
  <div class="list" id="soonL">${soon.length?soon.map(([s,i])=>`<div style="display:contents">${card(s,i)}</div>`).join(""):`<div class="empty">لا شيء مجدول. اضغط على أي قسم لإضافة عنصر.</div>`}</div>
