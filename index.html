@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.6 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.7 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -232,9 +232,9 @@ function renderHome(){
  const late=live("tasks").filter(x=>x.status!=="done"&&x.date&&x.date<t);
  const todayTasks=live("tasks").filter(x=>x.status!=="done"&&x.date===t).length;
  $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}<button class="btn sm" id="pfEdit" style="margin-inline-start:auto">✎ الملف الشخصي</button></div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length} متأخرة`:""}</p></div>
+ <div id="dailyBox">${dailyHtml()}</div>
  <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list]}</div><div class="l">${s.label}</div></button>`).join("")}</div>
  ${todayBlock()}
- <div id="dailyBox">${dailyHtml()}</div>
  <h3 class="sec">القادم خلال ١٤ يومًا</h3>
  <div class="list" id="soonL">${soon.length?soon.map(([s,i])=>`<div style="display:contents">${card(s,i)}</div>`).join(""):`<div class="empty">لا شيء مجدول. اضغط على أي قسم لإضافة عنصر.</div>`}</div>
  <div class="actions"><button class="btn primary" id="qa">+ إضافة سريعة</button></div>`;
@@ -249,22 +249,27 @@ const myWords=()=>{try{return JSON.parse(localStorage.getItem(WK)||"[]")}catch(e
 const mwSave=a=>localStorage.setItem(WK,JSON.stringify(a));
 function dayNo(){const d=new Date();return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))/864e5)}
 function todayWord(){const my=myWords();const all=(WORDS||[]).concat(my.map(x=>({t:x.t,r:x.r||"",own:1})));if(!all.length)return null;return all[dayNo()%all.length]}
-function wordCard(){const w=todayWord();if(!w)return`<div class="today"><h3>كلمة اليوم</h3><div class="muted sm">جارٍ التحميل...</div></div>`;
- return`<div class="today" id="wordCard"><h3>كلمة اليوم</h3><div style="font-size:17px;line-height:1.9;margin:6px 0">${esc(w.t)}</div><div class="muted sm" style="margin-bottom:8px">${esc(w.r)}${w.own?" · من إضافتك":""}</div><button class="btn sm" id="wShare">مشاركة</button> <button class="btn sm" id="wMine">+ إضافة شاهد خاص</button></div>`}
+function wordCard(){const w=todayWord();if(!w)return`<div class="today"><h3>آية اليوم</h3><div class="muted sm">جارٍ التحميل...</div></div>`;
+ return`<div class="today" id="wordCard"><h3>آية اليوم</h3><div style="font-size:17px;line-height:1.9;margin:6px 0">${esc(w.t)}</div><div class="muted sm" style="margin-bottom:8px">${esc(w.r)}${w.own?" · من إضافتك":""}</div><button class="btn sm" id="wShare">مشاركة</button> <button class="btn sm" id="wMine">+ إضافة شاهد خاص</button></div>`}
 function dailyHtml(){return`<div id="wordBox">${wordCard()}</div><div id="rdBox">${rdCard()}</div>`}
 function dailyInit(){
- if(!WORDS&&!wordsLoading){wordsLoading=true;fetch("words.json").then(r=>r.json()).then(j=>{WORDS=j;const b=$("#wordBox");if(b){b.innerHTML=wordCard();wBind()}}).catch(()=>{wordsLoading=false;const b=$("#wordBox");if(b){const my=myWords();if(!my.length)b.innerHTML=`<div class="today"><h3>كلمة اليوم</h3><div class="muted sm">تعذر التحميل (يلزم اتصال مرة واحدة).</div></div>`}})}
+ if(!WORDS&&!wordsLoading){wordsLoading=true;fetch("words.json").then(r=>r.json()).then(j=>{WORDS=j;const b=$("#wordBox");if(b){b.innerHTML=wordCard();wBind()}}).catch(()=>{wordsLoading=false;const b=$("#wordBox");if(b){const my=myWords();if(!my.length)b.innerHTML=`<div class="today"><h3>آية اليوم</h3><div class="muted sm">تعذر التحميل (يلزم اتصال مرة واحدة).</div></div>`}})}
  wBind();rdLoad()}
-function wBind(){const sh=$("#wShare"),mi=$("#wMine");if(sh)sh.onclick=async()=>{const w=todayWord();const x=w.t+"\n— "+w.r;try{if(navigator.share){await navigator.share({title:"كلمة اليوم",text:x});return}}catch(e){if(e.name==="AbortError")return}try{await navigator.clipboard.writeText(x);toast("تم النسخ")}catch(e){toast("تعذر النسخ")}};if(mi)mi.onclick=myWordsDialog}
+function wBind(){const sh=$("#wShare"),mi=$("#wMine");if(sh)sh.onclick=async()=>{const w=todayWord();const x=w.t+"\n— "+w.r;try{if(navigator.share){await navigator.share({title:"آية اليوم",text:x});return}}catch(e){if(e.name==="AbortError")return}try{await navigator.clipboard.writeText(x);toast("تم النسخ")}catch(e){toast("تعذر النسخ")}};if(mi)mi.onclick=myWordsDialog}
 function myWordsDialog(){const a=myWords();const m=openModal(`<h3>شواهدي الخاصة</h3><p class="muted sm">أضف شاهدًا أو جملة بصيغتك (محفوظة على هذا الجهاز فقط) وستظهر ضمن دورة كلمة اليوم.</p><textarea id="mwT" rows="3" placeholder="النص" style="width:100%"></textarea><input id="mwR" placeholder="المرجع (مثال: يوحنا ٣:١٦)" style="width:100%;margin-top:6px"><div class="actions"><button class="btn primary" id="mwAdd">إضافة</button></div><div class="list" id="mwL">${a.map((x,i)=>`<div class="trow"><div class="tt">${esc(x.t)}<small class="muted" style="display:block">${esc(x.r||"")}</small></div><button class="btn" data-mwdel="${i}">حذف</button></div>`).join("")}</div><div class="actions"><button class="btn" data-close>إغلاق</button></div>`);
  $("#mwAdd",m).onclick=()=>{const t=$("#mwT",m).value.trim();if(!t){toast("اكتب النص");return}const b=myWords();b.push({t,r:$("#mwR",m).value.trim()});mwSave(b);closeModal();toast("تمت الإضافة");render()};
  m.querySelectorAll("[data-mwdel]").forEach(b=>b.onclick=()=>{if(!confirm("حذف هذا الشاهد من قائمتك؟"))return;const c=myWords();c.splice(+b.dataset.mwdel,1);mwSave(c);closeModal();render()})}
 const dmy=d=>String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
 let rdData=null;
 function rdCache(){try{const c=JSON.parse(localStorage.getItem(RDK)||"null");return c&&c.d===dmy(new Date())?c.j:null}catch(e){return null}}
+const CMON=["","توت","بابه","هاتور","كيهك","طوبة","أمشير","برمهات","برمودة","بشنس","بؤونة","أبيب","مسرى","النسيء"];
+function copticStr(c){const m=String(c||"").match(/^(\d+)\/(\d+)\/(\d+)$/);if(!m)return c?String(c):"";const dg=n=>String(n).replace(/\d/g,x=>"٠١٢٣٤٥٦٧٨٩"[x]);return dg(m[1])+" "+(CMON[+m[2]]||m[2])+" "+dg(m[3])}
+const ORD=["","الأول","الثاني","الثالث","الرابع","الخامس"];
+function sundayOrd(c,dow){const m=String(c||"").match(/^(\d+)\/(\d+)\/(\d+)$/);if(!m||dow!==0)return"";const o=ORD[Math.ceil(+m[1]/7)];return o?"الأحد "+o+" من "+(CMON[+m[2]]||""):""}
+function sundayLine(c){const t=sundayOrd(c,new Date().getDay());return t?`<div style="font-weight:700;margin:2px 0 6px">${esc(t)}</div>`:""}
 function rdCard(){const j=rdData||rdCache();if(!j)return`<div class="today"><h3>قراءات اليوم</h3><div class="muted sm" id="rdMsg">جارٍ التحميل...</div></div>`;
  const secs=(j.sections||[]).map(s=>`<details style="margin:6px 0"><summary style="font-weight:700">${esc(s.title||"")}</summary>${(s.subSections||[]).map(ss=>`<div style="margin:6px 0"><div class="muted sm">${esc(ss.title||"")}</div>${(ss.readings||[]).map(r=>`<div style="margin:4px 0"><b class="sm">${esc(r.introduction||"")}</b>${(r.passages||[]).length?`<div class="muted sm">${(r.passages||[]).map(p=>esc((p.bookTranslation||"")+" "+(p.ref||""))).join(" ، ")}</div>`:""}${r.html?`<div style="line-height:1.9">${esc(String(r.html).replace(/<[^>]*>/g," "))}</div>`:""}<div style="line-height:1.9">${(r.passages||[]).map(p=>(p.verses||[]).map(v=>esc(v.text||"")).join(" ")).join(" ")}</div></div>`).join("")}</div>`).join("")}</details>`).join("");
- return`<div class="today"><h3>قراءات اليوم${j.copticDate?" · "+esc(String(j.copticDate)):""}</h3>${secs||`<div class="muted sm">لا توجد قراءات.</div>`}<div class="muted sm" style="margin-top:6px">المصدر: katameros.app (الترجمة: فان دايك)</div></div>`}
+ return`<div class="today"><h3 style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>قراءات اليوم · ${esc(new Date().toLocaleDateString("ar-EG",{day:"numeric",month:"long",year:"numeric"}))}</span><span>${esc(copticStr(j.copticDate))}</span></h3>${sundayLine(j.copticDate)}${secs||`<div class="muted sm">لا توجد قراءات.</div>`}<div class="muted sm" style="margin-top:6px">المصدر: katameros.app (الترجمة: فان دايك)</div></div>`}
 function rdLoad(){if(rdCache()||!navigator.onLine){const b=$("#rdBox");if(b&&rdCache())b.innerHTML=rdCard();return}
  fetch("https://api.katameros.app/readings/gregorian/"+dmy(new Date())+"?languageId=3").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{rdData=j;try{localStorage.setItem(RDK,JSON.stringify({d:dmy(new Date()),j}))}catch(e){}const b=$("#rdBox");if(b)b.innerHTML=rdCard()}).catch(()=>{const m=$("#rdMsg");if(m)m.textContent="تعذر تحميل القراءات الآن (تحتاج اتصالًا)."})}
 
@@ -284,6 +289,20 @@ function trashDialog(){const rows=[];LISTS.forEach(l=>state[l].filter(x=>x.delet
  const now=()=>Date.now();
  m.querySelectorAll("[data-rs]").forEach(b=>b.onclick=()=>{const [l,x]=rows[+b.dataset.rs];x.deleted=false;x.updatedAt=now();save();ensureRecurring();closeModal();render();toast("تمت الاستعادة")});
  m.querySelectorAll("[data-rss]").forEach(b=>b.onclick=()=>{const [l,x]=rows[+b.dataset.rss];seriesItems(l,x).forEach(y=>{y.deleted=false;y.seriesOn=0;y.updatedAt=now();if(!y.parent)delete y.until});save();ensureRecurring();closeModal();render();toast("تمت استعادة السلسلة")})}
+
+/* ===== backups (local snapshots) ===== */
+const BKK="priest-backups";
+const bkList=()=>{try{return JSON.parse(localStorage.getItem(BKK)||"[]")}catch(e){return[]}};
+function bkCount(j){try{const d=JSON.parse(j);return LISTS.reduce((n,k)=>n+(d[k]||[]).filter(x=>!x.deleted).length,0)}catch(e){return 0}}
+function autoBackup(force){const a=bkList(),last=a.length?a[a.length-1].at:0,now=Date.now();
+ const j=JSON.stringify(state);if(!force&&(now-last<7*864e5||bkCount(j)===0))return false;
+ a.push({at:now,d:j});while(a.length>4)a.shift();
+ for(;;){try{localStorage.setItem(BKK,JSON.stringify(a));return true}catch(e){if(a.length<=1)return false;a.shift()}}}
+function backupDialog(){const a=bkList().slice().reverse();
+ const m=openModal(`<h3>🛟 النسخ الاحتياطية</h3><p class="muted sm">يُحفظ تلقائيًا كل أسبوع آخر ٤ نسخ على هذا الجهاز (إضافة إلى نسخ الـ Sheet). الاستعادة تدمج بحسب آخر تعديل ولا تحذف شيئًا.</p><div class="list">${a.map((b,i)=>`<div class="trow"><div class="tt">${esc(new Date(b.at).toLocaleString("ar-EG"))}<small class="muted" style="display:block">${bkCount(b.d)} عنصر</small></div><button class="btn" data-bd="${i}">تنزيل</button><button class="btn" data-br="${i}">استعادة</button></div>`).join("")||'<div class="muted sm">لا توجد نسخ بعد.</div>'}</div><div class="actions"><button class="btn primary" id="bkNow">نسخة الآن</button><button class="btn" data-close>إغلاق</button></div>`);
+ $("#bkNow",m).onclick=()=>{autoBackup(true);closeModal();backupDialog()};
+ m.querySelectorAll("[data-bd]").forEach(b=>b.onclick=()=>{const x=a[+b.dataset.bd];const l=document.createElement("a");l.href=URL.createObjectURL(new Blob([x.d],{type:"application/json"}));l.download="priest-backup-"+new Date(x.at).toISOString().slice(0,10)+".json";l.click()});
+ m.querySelectorAll("[data-br]").forEach(b=>b.onclick=()=>{if(!confirm("دمج هذه النسخة مع بياناتك الحالية؟ (لن يُحذف شيء)"))return;try{autoBackup(true);state=mergeInto(state,norm(JSON.parse(a[+b.dataset.br].d)));save();ensureRecurring();closeModal();render();toast("تمت الاستعادة")}catch(e){toast("تعذرت الاستعادة")}})}
 function quickAdd(){
  openModal(`<h3>إضافة سريعة</h3><div class="list">${SECTIONS.filter(s=>s.list).map(s=>`<button class="btn" data-q="${s.list}">+ ${s.single}</button>`).join("")}</div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
@@ -544,7 +563,7 @@ async function req(method,payload){
  if(method==="GET"){const r=await fetch(c.url+(c.url.includes("?")?"&":"?")+"token="+encodeURIComponent(c.token));return r.json()}
  const r=await fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({token:c.token},payload))});return r.json()}
 async function sync(){
- if(!cfg()||busy)return;busy=true;
+ if(!cfg()||busy)return;if(!navigator.onLine){dot("err");return}busy=true;
  try{
   const r=await req("GET");if(r.error)throw new Error(r.error);
   let before=JSON.stringify(state);
@@ -908,8 +927,8 @@ async function calSync(btn){
 
 /* ---------- backup / theme / install ---------- */
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
@@ -924,6 +943,9 @@ addEventListener("appinstalled",()=>{["#installBtn","#installBtn2"].forEach(s=>$
 $("#themeBtn").onclick=toggleTheme;
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
 setInterval(()=>{if(!document.hidden)sync()},60000);
+addEventListener("online",()=>{toast("عاد الاتصال، جارٍ المزامنة");sync()});
+addEventListener("offline",()=>{dot("err");toast("لا يوجد اتصال: التغييرات محفوظة على جهازك وستُزامَن عند عودة الاتصال")});
+setTimeout(()=>autoBackup(false),4000);
 
 /* ---------- visits page ---------- */
 function renderVisitsPage(sec){
