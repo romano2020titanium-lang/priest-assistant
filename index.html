@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.5 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -234,13 +234,39 @@ function renderHome(){
  $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}<button class="btn sm" id="pfEdit" style="margin-inline-start:auto">✎ الملف الشخصي</button></div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length} متأخرة`:""}</p></div>
  <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list]}</div><div class="l">${s.label}</div></button>`).join("")}</div>
  ${todayBlock()}
+ <div id="dailyBox">${dailyHtml()}</div>
  <h3 class="sec">القادم خلال ١٤ يومًا</h3>
  <div class="list" id="soonL">${soon.length?soon.map(([s,i])=>`<div style="display:contents">${card(s,i)}</div>`).join(""):`<div class="empty">لا شيء مجدول. اضغط على أي قسم لإضافة عنصر.</div>`}</div>
  <div class="actions"><button class="btn primary" id="qa">+ إضافة سريعة</button></div>`;
  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ui.tab=b.dataset.go;ui.filter=ui.tab==="tasks"?"open":"upcoming";render()});
- bindCards($("#view"));bindToday();
+ bindCards($("#view"));bindToday();dailyInit();
  $("#qa").onclick=quickAdd;{const pe=$("#pfEdit");if(pe)pe.onclick=profileDialog}
 }
+
+/* ===== كلمة اليوم + قراءات اليوم ===== */
+const WK="priest-mywords",RDK="priest-readings-cache";let WORDS=null,wordsLoading=false;
+const myWords=()=>{try{return JSON.parse(localStorage.getItem(WK)||"[]")}catch(e){return[]}};
+const mwSave=a=>localStorage.setItem(WK,JSON.stringify(a));
+function dayNo(){const d=new Date();return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))/864e5)}
+function todayWord(){const my=myWords();const all=(WORDS||[]).concat(my.map(x=>({t:x.t,r:x.r||"",own:1})));if(!all.length)return null;return all[dayNo()%all.length]}
+function wordCard(){const w=todayWord();if(!w)return`<div class="today"><h3>كلمة اليوم</h3><div class="muted sm">جارٍ التحميل...</div></div>`;
+ return`<div class="today" id="wordCard"><h3>كلمة اليوم</h3><div style="font-size:17px;line-height:1.9;margin:6px 0">${esc(w.t)}</div><div class="muted sm" style="margin-bottom:8px">${esc(w.r)}${w.own?" · من إضافتك":""}</div><button class="btn sm" id="wShare">مشاركة</button> <button class="btn sm" id="wMine">+ إضافة شاهد خاص</button></div>`}
+function dailyHtml(){return`<div id="wordBox">${wordCard()}</div><div id="rdBox">${rdCard()}</div>`}
+function dailyInit(){
+ if(!WORDS&&!wordsLoading){wordsLoading=true;fetch("words.json").then(r=>r.json()).then(j=>{WORDS=j;const b=$("#wordBox");if(b){b.innerHTML=wordCard();wBind()}}).catch(()=>{wordsLoading=false;const b=$("#wordBox");if(b){const my=myWords();if(!my.length)b.innerHTML=`<div class="today"><h3>كلمة اليوم</h3><div class="muted sm">تعذر التحميل (يلزم اتصال مرة واحدة).</div></div>`}})}
+ wBind();rdLoad()}
+function wBind(){const sh=$("#wShare"),mi=$("#wMine");if(sh)sh.onclick=async()=>{const w=todayWord();const x=w.t+"\n— "+w.r;try{if(navigator.share){await navigator.share({title:"كلمة اليوم",text:x});return}}catch(e){if(e.name==="AbortError")return}try{await navigator.clipboard.writeText(x);toast("تم النسخ")}catch(e){toast("تعذر النسخ")}};if(mi)mi.onclick=myWordsDialog}
+function myWordsDialog(){const a=myWords();const m=openModal(`<h3>شواهدي الخاصة</h3><p class="muted sm">أضف شاهدًا أو جملة بصيغتك (محفوظة على هذا الجهاز فقط) وستظهر ضمن دورة كلمة اليوم.</p><textarea id="mwT" rows="3" placeholder="النص" style="width:100%"></textarea><input id="mwR" placeholder="المرجع (مثال: يوحنا ٣:١٦)" style="width:100%;margin-top:6px"><div class="actions"><button class="btn primary" id="mwAdd">إضافة</button></div><div class="list" id="mwL">${a.map((x,i)=>`<div class="trow"><div class="tt">${esc(x.t)}<small class="muted" style="display:block">${esc(x.r||"")}</small></div><button class="btn" data-mwdel="${i}">حذف</button></div>`).join("")}</div><div class="actions"><button class="btn" data-close>إغلاق</button></div>`);
+ $("#mwAdd",m).onclick=()=>{const t=$("#mwT",m).value.trim();if(!t){toast("اكتب النص");return}const b=myWords();b.push({t,r:$("#mwR",m).value.trim()});mwSave(b);closeModal();toast("تمت الإضافة");render()};
+ m.querySelectorAll("[data-mwdel]").forEach(b=>b.onclick=()=>{if(!confirm("حذف هذا الشاهد من قائمتك؟"))return;const c=myWords();c.splice(+b.dataset.mwdel,1);mwSave(c);closeModal();render()})}
+const dmy=d=>String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
+let rdData=null;
+function rdCache(){try{const c=JSON.parse(localStorage.getItem(RDK)||"null");return c&&c.d===dmy(new Date())?c.j:null}catch(e){return null}}
+function rdCard(){const j=rdData||rdCache();if(!j)return`<div class="today"><h3>قراءات اليوم</h3><div class="muted sm" id="rdMsg">جارٍ التحميل...</div></div>`;
+ const secs=(j.sections||[]).map(s=>`<details style="margin:6px 0"><summary style="font-weight:700">${esc(s.title||"")}</summary>${(s.subSections||[]).map(ss=>`<div style="margin:6px 0"><div class="muted sm">${esc(ss.title||"")}</div>${(ss.readings||[]).map(r=>`<div style="margin:4px 0"><b class="sm">${esc(r.introduction||"")}</b>${(r.passages||[]).length?`<div class="muted sm">${(r.passages||[]).map(p=>esc((p.bookTranslation||"")+" "+(p.ref||""))).join(" ، ")}</div>`:""}${r.html?`<div style="line-height:1.9">${esc(String(r.html).replace(/<[^>]*>/g," "))}</div>`:""}<div style="line-height:1.9">${(r.passages||[]).map(p=>(p.verses||[]).map(v=>esc(v.text||"")).join(" ")).join(" ")}</div></div>`).join("")}</div>`).join("")}</details>`).join("");
+ return`<div class="today"><h3>قراءات اليوم${j.copticDate?" · "+esc(String(j.copticDate)):""}</h3>${secs||`<div class="muted sm">لا توجد قراءات.</div>`}<div class="muted sm" style="margin-top:6px">المصدر: katameros.app (الترجمة: فان دايك)</div></div>`}
+function rdLoad(){if(rdCache()||!navigator.onLine){const b=$("#rdBox");if(b&&rdCache())b.innerHTML=rdCard();return}
+ fetch("https://api.katameros.app/readings/gregorian/"+dmy(new Date())+"?languageId=3").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{rdData=j;try{localStorage.setItem(RDK,JSON.stringify({d:dmy(new Date()),j}))}catch(e){}const b=$("#rdBox");if(b)b.innerHTML=rdCard()}).catch(()=>{const m=$("#rdMsg");if(m)m.textContent="تعذر تحميل القراءات الآن (تحتاج اتصالًا)."})}
 function quickAdd(){
  openModal(`<h3>إضافة سريعة</h3><div class="list">${SECTIONS.filter(s=>s.list).map(s=>`<button class="btn" data-q="${s.list}">+ ${s.single}</button>`).join("")}</div><div class="actions"><button class="btn" data-close>إلغاء</button></div>`);
  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{closeModal();openForm(b.dataset.q)});
