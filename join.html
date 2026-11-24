@@ -9,7 +9,7 @@ h1{font-size:20px;margin:8px 0 2px}.sub{color:#6b5a48;font-size:14px;margin:0}
 label{display:block;font-weight:600;margin:12px 0 4px;font-size:15px}label small{font-weight:400;color:#6b5a48}
 input,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #cdbfa9;border-radius:10px;background:#fffdf9}
 input:focus,textarea:focus{outline:2px solid #8a5a2b;border-color:#8a5a2b}textarea{min-height:80px;resize:vertical}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:380px){.row{grid-template-columns:1fr}}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.row>div{min-width:0}input[type=date]{min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;min-height:46px}@media(max-width:420px){.row{grid-template-columns:1fr}}
 .consent{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px;background:#f8f1e4;border-radius:10px;padding:10px}.consent input{width:22px;height:22px;margin-top:3px;flex:none}
 button{width:100%;margin-top:16px;font:inherit;font-weight:700;padding:14px;border:0;border-radius:12px;background:#8a5a2b;color:#fff;font-size:17px}button:disabled{opacity:.6}
 .msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:15px;display:none}.err{background:#fde8e6;color:#9b1c10;display:block}
