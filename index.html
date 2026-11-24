@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.8 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v8.9 (2026-11-24)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -895,17 +895,24 @@ function pinCfg(){try{return JSON.parse(localStorage.getItem(PINK)||"null")}catc
 function showLock(){
  if(!pinCfg()||$("#lock"))return;
  const d=document.createElement("div");d.className="lock";d.id="lock";
- d.innerHTML=`<div class="box"><div class="logo">✝</div><h3>مساعد الكاهن الذكي</h3><p class="muted sm">أدخل الرقم السري</p><input id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8"><p id="pinErr" class="sm" style="color:var(--urgent);min-height:20px"></p></div>`;
+ d.innerHTML=`<div class="box"><div class="logo">✝</div><h3>مساعد الكاهن الذكي</h3><p class="muted sm">أدخل الرقم السري</p><input id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8"><p id="pinErr" class="sm" style="color:var(--urgent);min-height:20px"></p><button class="btn" id="waGo" style="display:none">🔓 فتح بالبصمة / الوجه</button></div>`;
  document.body.appendChild(d);const i=$("#pinIn");i.focus();
+ if(localStorage.getItem(WAK))waAvail().then(ok=>{if(!ok)return;const g=$("#waGo");if(!g)return;g.style.display="";const go=async()=>{try{if(await waCheck()){d.remove();hiddenAt=0}}catch(e){$("#pinErr").textContent="تعذر التحقق بالبصمة، استخدم الرقم السري"}};g.onclick=go})
  i.oninput=async()=>{const c=pinCfg();if(i.value.length<c.len)return;if(await hashPin(i.value,c.salt)===c.hash){d.remove();hiddenAt=0}else{$("#pinErr").textContent="رقم خاطئ";i.value=""}}}
 let hiddenAt=0;
+const WAK="priest-webauthn";
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),unb64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+async function waAvail(){try{return!!(window.PublicKeyCredential&&navigator.credentials&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}
+async function waEnroll(){const cr=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"مساعد الكاهن الذكي",id:location.hostname},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:"priest",displayName:"الكاهن"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"},timeout:60000}});localStorage.setItem(WAK,b64(cr.rawId))}
+async function waCheck(){const id=localStorage.getItem(WAK);if(!id)return false;await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rpId:location.hostname,allowCredentials:[{type:"public-key",id:unb64(id)}],userVerification:"required",timeout:60000}});return true}
 document.addEventListener("visibilitychange",()=>{if(document.hidden)hiddenAt=Date.now();else if(hiddenAt&&Date.now()-hiddenAt>5*60000)showLock()});
 async function pinDialog(){
  const c=pinCfg();
- const m=openModal(`<h3>قفل التطبيق</h3><p class="muted sm">الرقم السري يُحفظ مشفّرًا (hash) في هذا الجهاز فقط ولا يُرفع إلى أي مكان. لو نسيته: امسح بيانات الموقع من المتصفح (بياناتك محفوظة في الـ Sheet).</p>${c?`<label>الرقم الحالي</label><input id="p0" type="password" inputmode="numeric">`:""}<label>رقم جديد (4 إلى 8 أرقام)</label><input id="p1" type="password" inputmode="numeric" maxlength="8"><div class="actions"><button class="btn primary" id="pSet">${c?"تغيير":"تفعيل"}</button>${c?`<button class="btn danger" id="pOff">إيقاف القفل</button>`:""}<button class="btn" data-close>إغلاق</button></div>`);
+ const m=openModal(`<h3>قفل التطبيق</h3><p class="muted sm">الرقم السري يُحفظ مشفّرًا (hash) في هذا الجهاز فقط ولا يُرفع إلى أي مكان. لو نسيته: امسح بيانات الموقع من المتصفح (بياناتك محفوظة في الـ Sheet).</p>${c?`<label>الرقم الحالي</label><input id="p0" type="password" inputmode="numeric">`:""}<label>رقم جديد (4 إلى 8 أرقام)</label><input id="p1" type="password" inputmode="numeric" maxlength="8"><div class="actions"><button class="btn primary" id="pSet">${c?"تغيير":"تفعيل"}</button>${c?`<button class="btn danger" id="pOff">إيقاف القفل</button>`:""}<button class="btn" data-close>إغلاق</button></div>${c?`<div id="waRow" style="margin-top:10px"></div>`:""}`);
+ if(c)waAvail().then(ok=>{const r=$("#waRow",m);if(!r)return;if(!ok){r.innerHTML=`<p class="muted sm">البصمة/الوجه غير متاحة على هذا الجهاز أو المتصفح. الرقم السري يعمل دائمًا.</p>`;return}const on=!!localStorage.getItem(WAK);r.innerHTML=on?`<p class="sm">البصمة/الوجه مفعّلة (الرقم السري يبقى بديلًا دائمًا).</p><button class="btn" id="waOff">إيقاف البصمة</button>`:`<button class="btn" id="waOn">تفعيل البصمة / الوجه</button><p class="muted sm">اختياري. الرقم السري يبقى متاحًا دائمًا.</p>`;const a=$("#waOn",m);if(a)a.onclick=async()=>{if(!await chk())return;try{await waEnroll();closeModal();toast("تم تفعيل البصمة")}catch(e){toast("لم يتم التفعيل")}};const b=$("#waOff",m);if(b)b.onclick=()=>{localStorage.removeItem(WAK);closeModal();toast("تم إيقاف البصمة")}});
  const chk=async()=>{if(!c)return true;const v=$("#p0",m).value;if(await hashPin(v,c.salt)===c.hash)return true;toast("الرقم الحالي خطأ");return false};
  $("#pSet",m).onclick=async()=>{if(!await chk())return;const v=$("#p1",m).value;if(!/^\d{4,8}$/.test(v)){toast("4 إلى 8 أرقام");return}const salt=uid()+uid();localStorage.setItem(PINK,JSON.stringify({salt,len:v.length,hash:await hashPin(v,salt)}));closeModal();toast("تم تفعيل القفل")};
- if(c)$("#pOff",m).onclick=async()=>{if(!await chk())return;localStorage.removeItem(PINK);closeModal();toast("تم إيقاف القفل")}}
+ if(c)$("#pOff",m).onclick=async()=>{if(!await chk())return;localStorage.removeItem(PINK);localStorage.removeItem(WAK);closeModal();toast("تم إيقاف القفل")}}
 /* ---------- CSV export ---------- */
 function csvExport(){
  const rows=[["القسم","العنوان","التاريخ","الوقت","المكان","الأشخاص","الحالة","ملاحظات"]];
