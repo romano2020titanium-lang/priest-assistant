@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.3 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.4 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -207,6 +207,7 @@ function card(sec,it){
  if(it.repeat)meta.push("🔁 "+esc(it.repeat));
  if(it.place)meta.push("📍 "+esc(it.place));
  if(it.people)meta.push("👤 "+esc(it.people));
+ if((it.roster||[]).length)meta.push("👥 "+it.roster.map(r=>esc((r.role?r.role+": ":"")+r.name)).join("، "));
  if(sec.task&&it.category==="visit"&&it.lastContacted)meta.push("آخر تواصل: "+fmtDate(it.lastContacted,{day:"numeric",month:"long"}));
  let badge="";
  if(sec.task&&it.category==="visit")badge=`<span class="badge visit">افتقاد</span>`;
@@ -221,6 +222,7 @@ function bindCards(root){
  root.querySelectorAll("[data-chk]").forEach(b=>b.onclick=e=>{e.stopPropagation();toggleDone(b.dataset.chk)});
  root.querySelectorAll("[data-dn]").forEach(b=>b.onclick=e=>{e.stopPropagation();doneDialog(b.dataset.dl,b.dataset.dn)});
 }
+function rosterNames(){return [...new Set([].concat(...live("liturgies").map(x=>(x.roster||[]).map(r=>r.name))).filter(Boolean))].sort()}
 const RATE={low:"حضور قليل",mid:"حضور متوسط",high:"حضور كبير"};
 function doneDialog(list,id){
  const it=state[list].find(x=>x.id===id);if(!it)return;
@@ -513,6 +515,10 @@ function rpCsv(){
  R.forEach(x=>L.push([x.m,x.v,x.p,x.mt,x.rt,x.l,x.t].map(q).join(",")));
  L.push(["المجموع",...["v","p","mt","rt","l","t"].map(k=>R.reduce((a,x)=>a+x[k],0))].map(q).join(","));
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+L.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="stats-"+rp.mode+"-"+rp.date.slice(0,7)+".csv";a.click()}
+function rosterHtml(){
+ const[s,e]=rpRange(),c={};live("liturgies").filter(x=>inR(x.date,s,e)).forEach(x=>{const seen=new Set();(x.roster||[]).forEach(r=>{const n=(r.name||"").trim();if(n&&!seen.has(n)){seen.add(n);c[n]=(c[n]||0)+1}})});
+ const a=Object.entries(c).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0]));
+ return `<div class="rp-sec"><h4>خدمة الخدام في القداسات</h4>${a.length?a.map(([n,k])=>`<div class="rp-li"><span>${esc(n)}</span><span class="muted">${k} مرة</span></div>`).join(""):'<div class="muted sm">لا خدام مسجلون في هذه الفترة</div>'}</div>`}
 function doneHtml(){
  const [s,e]=rpRange(),T=[["meetings","الاجتماعات"],["liturgies","القداسات"],["retreats","النهضات"]],today=todayISO();
  const rows=T.map(([l,n])=>{const a=live(l).filter(x=>x.date&&(l==="retreats"?(x.date<=e&&(x.endDate||x.date)>=s):inR(x.date,s,e)));const d=a.filter(x=>x.done),pastUn=a.filter(x=>!x.done&&x.date<today).length;const w=d.filter(x=>x.attend!==undefined&&x.attend!==""&&!isNaN(+x.attend));const av=w.length?Math.round(w.reduce((q,x)=>q+ +x.attend,0)/w.length):null;
@@ -547,6 +553,7 @@ function renderReports(sec){
  ${sect("القداسات",list(r.lit,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("المهام",list(r.tDone,x=>`<span>✓ ${esc(x.title)}</span>`)+list(r.tPend,x=>`<span>○ ${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`).replace('<div class="muted sm">لا شيء</div>',""))}
  ${doneHtml()}
+ ${rosterHtml()}
  ${attendHtml()}
  ${sect("الخدمات: الأداء الأسبوعي",list(r.svc,x=>`<span>${esc(x.sv.title)} · تقدم ${svProg(x.sv)}%${x.notes.length?`<br><span class="muted sm">${esc(x.notes.join("؛ "))}</span>`:""}</span><span class="stars">${x.avg?x.avg.toFixed(1)+"★":""} <span class="muted">${x.done}/${x.n} أسبوع</span></span>`))}`;
  document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{rp.mode=b.dataset.rm;render()});
@@ -579,14 +586,21 @@ function openForm(list,id,pre){
  if(["meetings","retreats","liturgies"].includes(sec.id))h+=`<label><input type="checkbox" name="done" style="width:auto"> تم</label>`+f("attend","عدد الحضور (اختياري)","number",'min="0" inputmode="numeric"')+`<label>تقييم الحضور</label><select name="rating"><option value="">بدون</option><option value="low">قليل</option><option value="mid">متوسط</option><option value="high">كبير</option></select>`;
  if(sec.task)h+=`<div id="visitFields"><label>رقم واتساب (يُحفظ في جهازك وفي الـ Sheet الخاص بك فقط)</label><input type="tel" name="phone" dir="ltr" placeholder="مثال: 01001234567" value="${esc(it.phone||"")}">${f("lastContacted","آخر تواصل","date")}</div>`;
  h+=`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
+ if(sec.id==="liturgies")h+=`<div class="rp-sec" style="margin-top:10px"><h4>👥 خدام القداس</h4><div id="rosterBox"></div><div class="actions"><button type="button" class="btn sm" id="rAdd">+ خادم</button><button type="button" class="btn sm" id="rCopy">نسخ من آخر قداس</button></div></div>`;
  h+=`<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
  const m=openModal(h);const form=$("#f",m);
+ if(sec.id==="liturgies"){const RB=$("#rosterBox",m);let ro=(it.roster||[]).map(x=>({role:x.role,name:x.name}));
+  const dr=()=>{RB.innerHTML=(ro.length?ro:[]).map((x,i)=>`<div class="row2" style="align-items:end"><div><input data-rr="${i}" list="rrL" placeholder="الدور" value="${esc(x.role)}"></div><div style="display:flex;gap:4px"><input data-rn="${i}" list="rnL" placeholder="الاسم" value="${esc(x.name)}"><button type="button" class="btn sm" data-rx="${i}">✕</button></div></div>`).join("")+`<datalist id="rrL">${["قارئ","شماس","مرتل","خادم المذبح","مسؤول الاستقبال","مسؤول الصوت","مسؤول الإنجيل"].map(n=>`<option value="${n}">`).join("")}</datalist><datalist id="rnL">${rosterNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`;
+   RB.querySelectorAll("[data-rr]").forEach(i=>i.oninput=()=>ro[i.dataset.rr].role=i.value);RB.querySelectorAll("[data-rn]").forEach(i=>i.oninput=()=>ro[i.dataset.rn].name=i.value);RB.querySelectorAll("[data-rx]").forEach(b=>b.onclick=()=>{ro.splice(b.dataset.rx,1);dr()})};
+  $("#rAdd",m).onclick=()=>{ro.push({role:"",name:""});dr()};
+  $("#rCopy",m).onclick=()=>{const prev=live("liturgies").filter(x=>x.id!==id&&(x.roster||[]).length&&(!form.date.value||x.date<=form.date.value)).sort((a,b)=>(b.date||"").localeCompare(a.date||""))[0];if(!prev){toast("لا يوجد قداس سابق به خدام");return}ro=prev.roster.map(x=>({role:x.role,name:x.name}));dr();toast("تم النسخ، عدّل ما تريد")};
+  dr();m._ro=()=>ro.filter(x=>x.role.trim()||x.name.trim()).map(x=>({role:x.role.trim(),name:x.name.trim()}))}
  if(form.done){form.done.checked=!!it.done;form.rating.value=it.rating||""}
  ["category","priority","status","recur"].forEach(k=>{if(form[k])form[k].value=it[k]||(k==="recur"?"":k==="category"?"general":k==="priority"?"normal":"pending")});
  const vf=$("#visitFields",m);if(vf){const sh=()=>vf.classList.toggle("hidden",form.category.value!=="visit");form.category.onchange=sh;sh()}
  form.onsubmit=e=>{e.preventDefault();
   const o=id?it:{id:uid(),createdAt:Date.now()};const RF=["title","time","place","people","notes"],pre=id?RF.map(k=>it[k]||"").join("|"):"";
-  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur","attend","rating"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});if(form.done){const nd=form.done.checked;if(nd&&!o.done)o.doneAt=todayISO();if(!nd)o.doneAt="";o.done=nd}
+  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur","attend","rating"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});if(m._ro)o.roster=m._ro();if(form.done){const nd=form.done.checked;if(nd&&!o.done)o.doneAt=todayISO();if(!nd)o.doneAt="";o.done=nd}
   if(!o.title)return;if(list==="tasks"){if(o.status==="done"&&!o.doneAt)o.doneAt=todayISO();if(o.status!=="done")o.doneAt=""}o.updatedAt=Date.now();
   if(!id)state[list].push(o);save();ensureRecurring();closeModal();render();toast("تم الحفظ");
   if(id&&(o.recur||o.parent)&&RF.map(k=>o[k]||"").join("|")!==pre)setTimeout(()=>rChoice("تطبيق هذا التعديل على:",c=>{if(c==="one")return;seriesItems(list,o).filter(x=>x.id!==o.id&&!x.deleted&&(c==="all"||x.date>o.date)).forEach(x=>{RF.forEach(f=>x[f]=o[f]);x.updatedAt=Date.now()});save();render();toast("تم التطبيق")}),60)};
