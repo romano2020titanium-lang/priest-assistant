@@ -115,6 +115,13 @@ textarea{min-height:80px;resize:vertical}
 .rp-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}.rp-box .v{font-size:26px;font-weight:800;line-height:1.2}.rp-box .l{font-size:12px;color:var(--muted)}
 .rp-sec{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px}.rp-sec h4{margin:0 0 6px;font-size:14px}
 .rp-li{font-size:13px;padding:3px 0;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:space-between}.rp-li:first-of-type{border-top:0}
+#rpDoc{display:none;background:#fff;color:#000;padding:22px;direction:rtl;font-family:inherit}body.pdoc>*:not(#rpDoc){display:none!important}body.pdoc #rpDoc{display:block}
+#rpDoc .rd-h{display:flex;align-items:center;gap:14px;border-bottom:3px double #7a5a1e;padding-bottom:12px}#rpDoc .rd-logo{width:72px;height:72px;border-radius:14px;overflow:hidden;background:#f1e8d4;display:flex;align-items:center;justify-content:center;font-size:40px;color:#7a5a1e;flex:none}#rpDoc .rd-logo img{width:100%;height:100%;object-fit:cover}
+#rpDoc .rd-c{font-size:22px;font-weight:800}#rpDoc .rd-n{font-size:15px;color:#444}#rpDoc .rd-ti{font-size:20px;text-align:center;margin:16px 0 12px}
+#rpDoc .rp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}#rpDoc .rp-box,#rpDoc .rp-sec{background:#fff!important;color:#000!important;border:1px solid #bbb!important;break-inside:avoid;margin-top:8px}#rpDoc .muted,#rpDoc .rp-box .l{color:#444!important}#rpDoc button{display:none}
+#rpDoc .rd-f{display:flex;justify-content:space-between;margin-top:26px;font-size:14px}#rpDoc .rd-b{text-align:center;color:#777;font-size:11px;margin-top:14px}
+@page{margin:14mm}
+.newb{background:var(--brand);color:#fff;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700;vertical-align:middle}
 @media print{.side,.bottom,.head .btn,.rp-nav,.chips,.actions,.toast{display:none!important}.layout{display:block}body{background:#fff;color:#000}.rp-box,.rp-sec{border-color:#999;background:#fff;color:#000;break-inside:avoid}.muted,.rp-box .l{color:#333}}
 
 .lock{position:fixed;inset:0;background:var(--bg);z-index:200;display:grid;place-items:center;padding:20px}
@@ -143,7 +150,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.0 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.1 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -542,12 +549,21 @@ function attendHtml(){
  const avgs=Object.values(T).map(k=>avg(k)!==null?`${k}: ${avg(k)}`:"").filter(Boolean).join(" · ");
  return `<div class="rp-sec"><h4>الحضور ${tr}</h4><div style="display:flex;gap:4px;align-items:flex-end;direction:ltr">${bars}</div><div class="muted sm">آخر ${last.length} مناسبة · المتوسط: ${esc(avgs)}</div>${list(last.slice().reverse(),x=>`<span>${esc(x.k)}: ${esc(x.t)}</span><span class="muted">${x.n}${RATE[x.r]?" · "+RATE[x.r].replace("حضور ",""):""}</span>`)}</div>`;
 }
+function rpDoc(doPrint){
+ const r=rpCompute(),pr=state.settings.profile||{};const old=$("#rpDoc");if(old)old.remove();
+ const parts=[...document.querySelectorAll("#view .rp-grid,#view .rp-sec")].map(x=>x.outerHTML).join("");
+ const d=document.createElement("div");d.id="rpDoc";
+ d.innerHTML=`<div class="rd-h"><div class="rd-logo">${pr.photo?`<img src="${pr.photo}" alt="">`:"✝"}</div><div class="rd-t"><div class="rd-c">${esc(pr.church||"الكنيسة")}</div><div class="rd-n">${esc(pr.name?"الأب "+pr.name.replace(/^الأب\s*/,""):"")}</div></div></div><h1 class="rd-ti">التقرير الرعوي · ${esc(r.title)}</h1>${parts}<div class="rd-f"><div>تاريخ الإصدار: ${esc(fmtDate(new Date(),{day:"numeric",month:"long",year:"numeric"}))}</div><div class="rd-sg">التوقيع: ____________________</div></div><div class="rd-b">مساعد الكاهن الذكي</div>`;
+ document.body.appendChild(d);document.body.classList.add("pdoc");
+ const end=()=>{document.body.classList.remove("pdoc");const x=$("#rpDoc");if(x)x.remove();window.removeEventListener("afterprint",end)};
+ if(doPrint){window.addEventListener("afterprint",end);setTimeout(()=>window.print(),300)}
+}
 function renderReports(sec){
  const r=rpCompute();
  const box=(v,l)=>`<div class="rp-box"><div class="v">${v}</div><div class="l">${l}</div></div>`;
  const list=(a,f)=>a.length?a.map(x=>`<div class="rp-li">${f(x)}</div>`).join(""):`<div class="muted sm">لا شيء</div>`;
  const sect=(h,b)=>`<div class="rp-sec"><h4>${h}</h4>${b}</div>`;
- $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="rpShare">مشاركة</button><button class="btn" id="rpPrint">طباعة / PDF</button><button class="btn" id="rpCsv">CSV</button></div></div>
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="rpShare">مشاركة</button><button class="btn" id="rpPrint">طباعة / PDF</button><button class="btn primary" id="rpDocB">📄 تقرير رسمي PDF</button><button class="btn" id="rpCsv">CSV</button></div></div>
  <div class="chips">${[["day","يومي"],["week","أسبوعي"],["month","شهري"],["quarter","ربع سنوي"],["year","سنوي"]].map(([k,l])=>`<button class="chip ${rp.mode===k?"on":""}" data-rm="${k}">${l}</button>`).join("")}</div>
  <div class="rp-nav"><button class="btn sm" id="rpP">→ السابق</button><div class="ttl">${esc(r.title)}</div><button class="btn sm" id="rpN">التالي ←</button><button class="btn sm" id="rpT">اليوم</button></div>
  ${rpStatsHtml()}
@@ -563,7 +579,7 @@ function renderReports(sec){
  ${sect("الخدمات: الأداء الأسبوعي",list(r.svc,x=>`<span>${esc(x.sv.title)} · تقدم ${svProg(x.sv)}%${x.notes.length?`<br><span class="muted sm">${esc(x.notes.join("؛ "))}</span>`:""}</span><span class="stars">${x.avg?x.avg.toFixed(1)+"★":""} <span class="muted">${x.done}/${x.n} أسبوع</span></span>`))}`;
  document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{rp.mode=b.dataset.rm;render()});
  $("#rpP").onclick=()=>{rpStep(-1);render()};$("#rpN").onclick=()=>{rpStep(1);render()};$("#rpT").onclick=()=>{rp.date=todayISO();render()};
- $("#rpPrint").onclick=()=>window.print();$("#rpCsv").onclick=rpCsv;
+ $("#rpPrint").onclick=()=>window.print();$("#rpDocB").onclick=()=>rpDoc(true);$("#rpCsv").onclick=rpCsv;
  $("#rpShare").onclick=async()=>{const x=rpText(r);try{if(navigator.share){await navigator.share({title:"تقرير",text:x});return}}catch(e){if(e.name==="AbortError")return}
   try{await navigator.clipboard.writeText(x);toast("تم نسخ التقرير")}catch(e){openModal(`<h3>التقرير</h3><textarea style="height:300px" readonly>${esc(x)}</textarea><div class="actions"><button class="btn" data-close>إغلاق</button></div>`)}}
 }
@@ -637,11 +653,11 @@ async function sync(){
  if(!cfg()||busy)return;if(!navigator.onLine){dot("err");return}busy=true;
  try{
   const r=await req("GET");if(r.error)throw new Error(r.error);
-  let before=JSON.stringify(state);
+  let before=JSON.stringify(state);const nb=state.people.filter(p=>p.isNew&&!p.deleted).length;
   if(r.data)state=mergeInto(state,norm(r.data));
   const changed=JSON.stringify(state)!==before;
   const remoteSame=r.data&&JSON.stringify(mergeInto(norm(r.data),norm({})))===JSON.stringify(state);
-  if(changed){localStorage.setItem(STORE,JSON.stringify(state));render()}
+  if(changed){localStorage.setItem(STORE,JSON.stringify(state));render();const na=state.people.filter(p=>p.isNew&&!p.deleted).length;if(na>nb)toast("🆕 وصل "+(na-nb)+" من الاستمارة")}
   if(!r.data||!remoteSame||meta().dirty){
    const p=await req("POST",{updatedAt:Date.now(),data:state});if(p.error)throw new Error(p.error);
    if(p.data){const mg=mergeInto(state,norm(p.data));if(JSON.stringify(mg)!==JSON.stringify(state)){state=mg;localStorage.setItem(STORE,JSON.stringify(state));render()}}
@@ -661,6 +677,14 @@ function syncDialog(){
  history.replaceState(null,"",location.pathname+location.search)})();
 
 
+/* ---------- public intake form link ---------- */
+function formLink(){const pr=state.settings.profile||{};const u=new URL("join.html",location.href);u.hash="";u.search="";if(pr.church)u.searchParams.set("c",pr.church);if(pr.name)u.searchParams.set("n",pr.name);return u.toString()}
+function formLinkDialog(){
+ const L=formLink(),msg="سلام ونعمة 🙏\nمن فضلك املأ هذه الاستمارة ببياناتك لتصل إلى أبونا:\n"+L;
+ const m=openModal(`<h3>🔗 رابط استمارة التسجيل</h3><div class="muted sm">أرسل الرابط لأي شخص على واتساب. عندما يملأ بياناته تظهر في «المخدومين» عندك مع علامة «جديد» عند المزامنة التالية (خلال دقيقة تقريبًا والتطبيق مفتوح). الاستمارة لا تستطيع قراءة أي بيانات، فقط إضافة شخص جديد، والأرقام المكررة تُتجاهل.</div><textarea id="flT" readonly style="height:120px;margin-top:8px">${esc(msg)}</textarea><div class="actions"><button class="btn primary" id="flWa">💬 إرسال عبر واتساب</button><button class="btn" id="flCp">نسخ الرسالة</button><button class="btn" id="flSh">مشاركة</button><button class="btn" data-close>إغلاق</button></div>`);
+ $("#flWa",m).onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+ $("#flCp",m).onclick=async()=>{try{await navigator.clipboard.writeText(msg);toast("تم النسخ")}catch(e){$("#flT",m).select();toast("حدد النص وانسخه")}};
+ const sh=$("#flSh",m);if(!navigator.share)sh.style.display="none";else sh.onclick=()=>navigator.share({text:msg}).catch(()=>{})}
 /* ---------- profile (name, church, photo) ---------- */
 function applyProfile(){const pr=state.settings.profile||{};
  document.querySelectorAll(".brand .logo").forEach(l=>{if(pr.photo){if(l.dataset.ph!==pr.photo.length+""){l.innerHTML="";const im=new Image();im.src=pr.photo;im.alt="";l.appendChild(im);l.dataset.ph=pr.photo.length+""}}else{l.textContent="✝";delete l.dataset.ph}l.onclick=profileDialog});
@@ -877,11 +901,11 @@ function ensureRecurring(){
  if(made){save()}}
 /* ---------- people ---------- */
 function renderPeople(sec){
- const all0=dueList(),t=todayISO(),pq=(ui.pq||"").trim().toLowerCase();const dl=pq?all0.filter(({p})=>(p.title+" "+(p.household||"")+" "+(p.phone||"")+" "+(p.notes||"")).toLowerCase().includes(pq)):all0;const shown=dl.slice(0,ui.plim||50);
- $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="impC">📇 استيراد من جهات الاتصال</button><button class="btn" id="impP">استيراد Excel/CSV</button><button class="btn" id="thrP">⚙ مدة التنبيه</button><button class="btn primary" id="addBtn">+ إضافة شخص</button></div></div>
- <input id="pq" placeholder="🔍 بحث في المخدومين (اسم، رقم، ملاحظة)" value="${esc(ui.pq||"")}" autocomplete="off" style="margin:8px 0"><h3 class="sec">يستحقون افتقادًا (الأطول غيابًا أولًا) · ${dl.length}</h3>
- <div class="list">${shown.length?shown.map(({p,lv,days})=>`<div class="card" data-pid="${p.id}"><div class="body"><div class="t">${esc(p.title)}</div><div class="meta">${p.household?`<span>🏠 ${esc(p.household)} (${hhMembers(p).length})</span>`:""}<span>${lv?"آخر افتقاد: "+esc(fmtDate(lv,{day:"numeric",month:"short",year:"numeric"}))+" ("+days+" يوم)":"لم يُفتقد بعد"}</span>${p.birthday?`<span>🎂 ${esc(fmtDate(p.birthday,{day:"numeric",month:"long"}))}</span>`:""}${p.nameDay?`<span>عيد الشفيع: ${esc(fmtDate(p.nameDay,{day:"numeric",month:"long"}))}</span>`:""}${p.phone?`<span dir="ltr">${esc(p.phone)}</span>`:""}</div>${p.notes?`<div class="meta">${esc(p.notes)}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn sm" data-pv="${p.id}">سجّل افتقاد اليوم</button>${p.phone?`<button class="btn sm" data-pw="${p.id}">💬 واتساب</button>`:""}</div></div>`).join(""):`<div class="empty">لا يوجد أشخاص بعد. اضغط "+ إضافة شخص". أرقام الهاتف تُحفظ في جهازك وفي الـ Sheet الخاص بك فقط.</div>`}</div>${dl.length>shown.length?`<div class="actions"><button class="btn" id="pMore">عرض المزيد (${dl.length-shown.length})</button></div>`:""}`;
- {const pm=$("#pMore");if(pm)pm.onclick=()=>{ui.plim=(ui.plim||50)+50;render()};const pi=$("#pq");let pt;pi.oninput=()=>{clearTimeout(pt);pt=setTimeout(()=>{ui.pq=pi.value;ui.plim=50;render();const n=$("#pq");n.focus();n.setSelectionRange(n.value.length,n.value.length)},250)}}
+ const all0=dueList(),t=todayISO(),pq=(ui.pq||"").trim().toLowerCase();const dl0=ui.nwOnly?all0.filter(({p})=>p.isNew):all0;const dl=pq?dl0.filter(({p})=>(p.title+" "+(p.household||"")+" "+(p.phone||"")+" "+(p.notes||"")).toLowerCase().includes(pq)):dl0;const shown=dl.slice(0,ui.plim||50);
+ $("#view").innerHTML=`<div class="head"><h2>${sec.ic} ${sec.label}</h2><div class="actions" style="margin:0"><button class="btn" id="fmL">🔗 رابط استمارة التسجيل</button><button class="btn" id="impC">📇 استيراد من جهات الاتصال</button><button class="btn" id="impP">استيراد Excel/CSV</button><button class="btn" id="thrP">⚙ مدة التنبيه</button><button class="btn primary" id="addBtn">+ إضافة شخص</button></div></div>
+ <input id="pq" placeholder="🔍 بحث في المخدومين (اسم، رقم، ملاحظة)" value="${esc(ui.pq||"")}" autocomplete="off" style="margin:8px 0">${(n=>n?`<div class="card" style="border-color:var(--brand);margin:8px 0"><div class="body"><div class="t">🆕 ${n} ${n===1?"شخص جديد":"أشخاص جدد"} من الاستمارة</div></div><div style="display:flex;gap:6px"><button class="btn sm" id="nwF">${ui.nwOnly?"عرض الكل":"عرض الجدد فقط"}</button><button class="btn sm" id="nwAll">✓ تم الاطلاع</button></div></div>`:"")(live("people").filter(p=>p.isNew).length)}<h3 class="sec">يستحقون افتقادًا (الأطول غيابًا أولًا) · ${dl.length}</h3>
+ <div class="list">${shown.length?shown.map(({p,lv,days})=>`<div class="card" data-pid="${p.id}"><div class="body"><div class="t">${esc(p.title)}${p.isNew?' <span class="newb">جديد</span>':""}</div><div class="meta">${p.household?`<span>🏠 ${esc(p.household)} (${hhMembers(p).length})</span>`:""}<span>${lv?"آخر افتقاد: "+esc(fmtDate(lv,{day:"numeric",month:"short",year:"numeric"}))+" ("+days+" يوم)":"لم يُفتقد بعد"}</span>${p.birthday?`<span>🎂 ${esc(fmtDate(p.birthday,{day:"numeric",month:"long"}))}</span>`:""}${p.nameDay?`<span>عيد الشفيع: ${esc(fmtDate(p.nameDay,{day:"numeric",month:"long"}))}</span>`:""}${p.phone?`<span dir="ltr">${esc(p.phone)}</span>`:""}</div>${p.notes?`<div class="meta">${esc(p.notes)}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn sm" data-pv="${p.id}">سجّل افتقاد اليوم</button>${p.phone?`<button class="btn sm" data-pw="${p.id}">💬 واتساب</button>`:""}</div></div>`).join(""):`<div class="empty">لا يوجد أشخاص بعد. اضغط "+ إضافة شخص". أرقام الهاتف تُحفظ في جهازك وفي الـ Sheet الخاص بك فقط.</div>`}</div>${dl.length>shown.length?`<div class="actions"><button class="btn" id="pMore">عرض المزيد (${dl.length-shown.length})</button></div>`:""}`;
+ $("#fmL").onclick=formLinkDialog;{const nf=$("#nwF");if(nf)nf.onclick=()=>{ui.nwOnly=!ui.nwOnly;render()};const na=$("#nwAll");if(na)na.onclick=()=>{const t=Date.now();state.people.forEach(p=>{if(p.isNew){p.isNew=false;p.updatedAt=t}});ui.nwOnly=false;save();render()}}{const pm=$("#pMore");if(pm)pm.onclick=()=>{ui.plim=(ui.plim||50)+50;render()};const pi=$("#pq");let pt;pi.oninput=()=>{clearTimeout(pt);pt=setTimeout(()=>{ui.pq=pi.value;ui.plim=50;render();const n=$("#pq");n.focus();n.setSelectionRange(n.value.length,n.value.length)},250)}}
  $("#addBtn").onclick=()=>openPerson(null);$("#impP").onclick=importPeople;$("#impC").onclick=contactsImport;$("#thrP").onclick=thrDialog;
  document.querySelectorAll("[data-pid]").forEach(c=>c.onclick=e=>{if(e.target.closest("button"))return;openPerson(c.dataset.pid)});
  document.querySelectorAll("[data-pv]").forEach(b=>b.onclick=()=>{const p=state.people.find(x=>x.id===b.dataset.pv);p.lastVisit=todayISO();p.updatedAt=Date.now();save();render();toast("تم تسجيل الافتقاد")});
@@ -898,7 +922,7 @@ function openPerson(id){
  const f=(k,l,ty="text",x="")=>`<label>${l}</label><input type="${ty}" name="${k}" value="${esc(p[k]||"")}" ${x}>`;
  const m=openModal(`<h3>${id?"تعديل":"إضافة"} شخص</h3><form id="f">${f("title","الاسم / الأسرة","text","required")}<label>الأسرة (اسم العائلة لتجميع الأفراد)</label><input name="household" list="hhL" value="${esc(p.household||"")}" autocomplete="off"><datalist id="hhL">${hhNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>${f("phone","رقم واتساب (في جهازك والـ Sheet فقط)","tel",'dir="ltr"')}<div class="row2"><div>${f("birthday","تاريخ الميلاد","date")}</div><div>${f("nameDay","عيد الشفيع (اسم القديس)","date")}</div></div>${f("place","العنوان / المنطقة")}${f("lastVisit","آخر افتقاد","date")}${f("planDate","موعد افتقاد مخطط (اختياري)","date")}<label>ملاحظات عائلية</label><textarea name="notes">${esc(p.notes||"")}</textarea>${hhBox(p)}${id?`<button type="button" class="btn" id="ckBtn" style="margin-top:8px">📋 قائمة متابعة لهذا الشخص</button>`:""}<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`);
  const form=$("#f",m);
- form.onsubmit=e=>{e.preventDefault();const o=id?p:{id:uid(),createdAt:Date.now()};["title","household","phone","birthday","nameDay","place","lastVisit","planDate","notes"].forEach(k=>o[k]=form[k].value.trim());if(!o.title)return;o.updatedAt=Date.now();if(!id)state.people.push(o);save();closeModal();render();toast("تم الحفظ")};
+ form.onsubmit=e=>{e.preventDefault();const o=id?p:{id:uid(),createdAt:Date.now()};["title","household","phone","birthday","nameDay","place","lastVisit","planDate","notes"].forEach(k=>o[k]=form[k].value.trim());if(!o.title)return;o.updatedAt=Date.now();if(o.isNew)o.isNew=false;if(!id)state.people.push(o);save();closeModal();render();toast("تم الحفظ")};
  const cb=$("#ckBtn",m);if(cb)cb.onclick=()=>{closeModal();ckApply(p)};
  m.querySelectorAll("[data-hho]").forEach(b=>b.onclick=()=>{closeModal();openPerson(b.dataset.hho)});
  const hv=$("#hhVisit",m);if(hv)hv.onclick=()=>{const L=hhMembers(p);if(!confirm("تسجيل افتقاد اليوم لكل أفراد الأسرة ("+L.length+")؟"))return;L.forEach(x=>{x.lastVisit=todayISO();x.planDate="";x.updatedAt=Date.now()});save();closeModal();render();toast("تم تسجيل افتقاد الأسرة ✓")};

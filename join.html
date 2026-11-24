@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>استمارة التسجيل</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;background:#f4efe6;color:#2b2118;line-height:1.6}
+.wrap{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.top{text-align:center;margin-bottom:12px}.top img{width:72px;height:72px;border-radius:18px;object-fit:cover}
+h1{font-size:20px;margin:8px 0 2px}.sub{color:#6b5a48;font-size:14px;margin:0}
+label{display:block;font-weight:600;margin:12px 0 4px;font-size:15px}label small{font-weight:400;color:#6b5a48}
+input,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #cdbfa9;border-radius:10px;background:#fffdf9}
+input:focus,textarea:focus{outline:2px solid #8a5a2b;border-color:#8a5a2b}textarea{min-height:80px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:380px){.row{grid-template-columns:1fr}}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px;background:#f8f1e4;border-radius:10px;padding:10px}.consent input{width:22px;height:22px;margin-top:3px;flex:none}
+button{width:100%;margin-top:16px;font:inherit;font-weight:700;padding:14px;border:0;border-radius:12px;background:#8a5a2b;color:#fff;font-size:17px}button:disabled{opacity:.6}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:15px;display:none}.err{background:#fde8e6;color:#9b1c10;display:block}
+.ok{text-align:center;padding:26px 8px}.ok .big{font-size:46px}.hp{position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden}
+.foot{text-align:center;color:#85735d;font-size:12px;margin-top:12px}
+</style></head><body><div class="wrap">
+<div class="top"><img src="icon-192.png" alt=""><h1 id="ttl">استمارة التسجيل</h1><p class="sub" id="sub">من فضلك املأ بياناتك لتصل إلى أبونا</p></div>
+<div class="card" id="box">
+<form id="f" autocomplete="on" novalidate>
+<label for="name">الاسم <small>(مطلوب)</small></label><input id="name" name="name" maxlength="80" autocomplete="name" required>
+<label for="phone">رقم الهاتف / واتساب <small>(مطلوب)</small></label><input id="phone" name="phone" type="tel" dir="ltr" inputmode="tel" maxlength="30" autocomplete="tel" placeholder="01xxxxxxxxx" style="text-align:right" required>
+<label for="place">العنوان / المنطقة</label><input id="place" name="place" maxlength="120" autocomplete="street-address">
+<label for="family">اسم العائلة أو الأسرة <small>(مثال: عائلة جرجس)</small></label><input id="family" name="family" maxlength="80">
+<div class="row"><div><label for="birthday">تاريخ الميلاد</label><input id="birthday" name="birthday" type="date"></div><div><label for="nameDay">عيد الشفيع <small>(اسم القديس)</small></label><input id="nameDay" name="nameDay" type="date"></div></div>
+<label for="notes">ملاحظات <small>(اختياري، مثل أفراد الأسرة أو طلب صلاة)</small></label><textarea id="notes" name="notes" maxlength="500"></textarea>
+<div class="hp" aria-hidden="true"><label>Website</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+<label class="consent"><input type="checkbox" id="ok"><span>أوافق على إرسال هذه البيانات إلى <b id="who">الأب</b> لاستخدامها في الافتقاد والتواصل الرعوي فقط، ولا تُشارَك مع أي جهة أخرى.</span></label>
+<div class="msg" id="m"></div>
+<button type="submit" id="go">إرسال</button>
+</form></div>
+<div class="foot">بياناتك تصل إلى أبونا مباشرة فقط</div>
+</div>
+<script>
+const EP="https://script.google.com/macros/s/AKfycbwTvSOyHrHXsGkuKsDbgV1xMWd4RXVMeuZ6TUEJAxsoZniWbbbzLKM3ZOKdO0dbATw_5w/exec";
+const q=new URLSearchParams(location.search),$=i=>document.getElementById(i),t0=Date.now();
+const pn=(q.get("n")||"").slice(0,60),ch=(q.get("c")||"").slice(0,80);
+if(ch){$("ttl").textContent=ch;document.title=ch}
+if(pn){$("sub").textContent="من فضلك املأ بياناتك لتصل إلى "+pn;$("who").textContent=pn}
+function show(t){const m=$("m");m.textContent=t;m.className="msg err"}
+$("f").onsubmit=e=>{e.preventDefault();$("m").className="msg";
+ const name=$("name").value.trim(),phone=$("phone").value.trim(),digits=phone.replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g,"");
+ if(name.length<2){show("اكتب الاسم من فضلك");$("name").focus();return}
+ if(digits.length<8||digits.length>15){show("تأكد من رقم الهاتف");$("phone").focus();return}
+ if(!$("ok").checked){show("من فضلك وافق على إرسال البيانات");return}
+ const go=$("go");go.disabled=true;go.textContent="جارٍ الإرسال...";
+ const cb="cb"+Date.now(),p=new URLSearchParams({action:"intake",cb,name,phone,place:$("place").value,family:$("family").value,birthday:$("birthday").value,nameDay:$("nameDay").value,notes:$("notes").value,hp:$("website").value,t:Date.now()-t0});
+ const s=document.createElement("script");let done=false;
+ const fail=m=>{if(done)return;done=true;s.remove();go.disabled=false;go.textContent="إرسال";show(m||"تعذّر الإرسال. تأكد من الإنترنت وحاول مرة أخرى")};
+ const tm=setTimeout(()=>fail(),25000);
+ window[cb]=r=>{if(done)return;done=true;clearTimeout(tm);s.remove();
+  if(r&&r.ok){$("box").innerHTML='<div class="ok"><div class="big">✅</div><h2>تم الاستلام</h2><p>شكرًا لك، وصلت بياناتك إلى '+(pn?"":"أبونا")+'<b></b></p><p>الرب يبارك حياتك</p></div>';if(pn)$("box").querySelector("b").textContent=pn}
+  else{go.disabled=false;go.textContent="إرسال";show(r&&r.error==="invalid"?"تأكد من الاسم ورقم الهاتف":"الخدمة مشغولة الآن، حاول بعد قليل")}};
+ s.onerror=()=>fail();s.src=EP+"?"+p.toString();document.head.appendChild(s)};
+</script></body></html>
