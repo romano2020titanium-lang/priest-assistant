@@ -230,7 +230,7 @@ function openForm(list,id,pre){
  if(sec.task)h+=`<div class="row2"><div><label>الأهمية</label><select name="priority"><option value="urgent">عاجل</option><option value="important">مهم</option><option value="normal">عادي</option></select></div><div><label>الحالة</label><select name="status"><option value="pending">لم تبدأ</option><option value="done">تمت</option></select></div></div>`;
  h+=f("place","المكان")+f("people",sec.people);
  if(sec.task)h+=`<div id="visitFields"><label>رقم واتساب (يُحفظ في جهازك وفي الـ Sheet الخاص بك فقط)</label><input type="tel" name="phone" dir="ltr" placeholder="مثال: 01001234567" value="${esc(it.phone||"")}">${f("lastContacted","آخر تواصل","date")}</div>`;
- h+=+`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
+ h+=`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
  h+=`<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
  const m=openModal(h);const form=$("#f",m);
  ["category","priority","status"].forEach(k=>{if(form[k])form[k].value=it[k]||(k==="category"?"general":k==="priority"?"normal":"pending")});
