@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.0 (2026-11-24)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.1 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -503,6 +503,19 @@ function rpCsv(){
  R.forEach(x=>L.push([x.m,x.v,x.p,x.mt,x.rt,x.l,x.t].map(q).join(",")));
  L.push(["المجموع",...["v","p","mt","rt","l","t"].map(k=>R.reduce((a,x)=>a+x[k],0))].map(q).join(","));
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+L.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="stats-"+rp.mode+"-"+rp.date.slice(0,7)+".csv";a.click()}
+function attendHtml(){
+ const list=(a,f)=>a.map(x=>`<div class="rp-li">${f(x)}</div>`).join("");
+ const T={meetings:"اجتماع",retreats:"نهضة",liturgies:"قداس"};
+ const all=[].concat(...Object.keys(T).map(l=>live(l).filter(x=>x.attend!==undefined&&x.attend!==""&&!isNaN(+x.attend)&&x.date).map(x=>({t:x.title,d:x.date,n:+x.attend,k:T[l]})))).sort((a,b)=>a.d<b.d?-1:1);
+ if(!all.length)return `<div class="rp-sec"><h4>الحضور</h4><div class="muted sm">سجّل «عدد الحضور» داخل الاجتماع أو القداس أو النهضة لتظهر الإحصائية هنا.</div></div>`;
+ const last=all.slice(-12),mx=Math.max(...last.map(x=>x.n),1);
+ const avg=k=>{const a=all.filter(x=>x.k===k);return a.length?Math.round(a.reduce((s,x)=>s+x.n,0)/a.length):null};
+ const half=Math.floor(last.length/2),m=a=>a.length?a.reduce((s,x)=>s+x.n,0)/a.length:0;
+ const tr=last.length>=4?(m(last.slice(half))>m(last.slice(0,half))*1.05?"📈 في ارتفاع":m(last.slice(half))<m(last.slice(0,half))*0.95?"📉 في انخفاض":"➖ ثابت تقريبًا"):"";
+ const bars=last.map(x=>`<div style="flex:1;min-width:0;text-align:center"><div class="muted sm">${x.n}</div><div title="${esc(x.t)}" style="background:var(--brand);height:${Math.max(4,Math.round(x.n/mx*80))}px;border-radius:4px 4px 0 0"></div><div class="muted" style="font-size:10px">${esc(fmtDate(x.d,{day:"numeric",month:"numeric"}))}</div></div>`).join("");
+ const avgs=Object.values(T).map(k=>avg(k)!==null?`${k}: ${avg(k)}`:"").filter(Boolean).join(" · ");
+ return `<div class="rp-sec"><h4>الحضور ${tr}</h4><div style="display:flex;gap:4px;align-items:flex-end;direction:ltr">${bars}</div><div class="muted sm">آخر ${last.length} مناسبة · المتوسط: ${esc(avgs)}</div>${list(last.slice().reverse(),x=>`<span>${esc(x.k)}: ${esc(x.t)}</span><span class="muted">${x.n}</span>`)}</div>`;
+}
 function renderReports(sec){
  const r=rpCompute();
  const box=(v,l)=>`<div class="rp-box"><div class="v">${v}</div><div class="l">${l}</div></div>`;
@@ -518,6 +531,7 @@ function renderReports(sec){
  ${sect("النهضات",list(r.ret,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("القداسات",list(r.lit,x=>`<span>${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`))}
  ${sect("المهام",list(r.tDone,x=>`<span>✓ ${esc(x.title)}</span>`)+list(r.tPend,x=>`<span>○ ${esc(x.title)}</span><span class="muted">${esc(fmtDate(x.date,{day:"numeric",month:"short"}))}</span>`).replace('<div class="muted sm">لا شيء</div>',""))}
+ ${attendHtml()}
  ${sect("الخدمات: الأداء الأسبوعي",list(r.svc,x=>`<span>${esc(x.sv.title)} · تقدم ${svProg(x.sv)}%${x.notes.length?`<br><span class="muted sm">${esc(x.notes.join("؛ "))}</span>`:""}</span><span class="stars">${x.avg?x.avg.toFixed(1)+"★":""} <span class="muted">${x.done}/${x.n} أسبوع</span></span>`))}`;
  document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{rp.mode=b.dataset.rm;render()});
  $("#rpP").onclick=()=>{rpStep(-1);render()};$("#rpN").onclick=()=>{rpStep(1);render()};$("#rpT").onclick=()=>{rp.date=todayISO();render()};
@@ -546,6 +560,7 @@ function openForm(list,id,pre){
  if(sec.end)h+=f("endDate","ينتهي في (اختياري)","date");
  if(sec.task)h+=`<div class="row2"><div><label>الأهمية</label><select name="priority"><option value="urgent">عاجل</option><option value="important">مهم</option><option value="normal">عادي</option></select></div><div><label>الحالة</label><select name="status"><option value="pending">لم تبدأ</option><option value="done">تمت</option></select></div></div>`;
  h+=f("place","المكان")+f("people",sec.people);
+ if(["meetings","retreats","liturgies"].includes(sec.id))h+=f("attend","عدد الحضور (اختياري)","number",'min="0" inputmode="numeric"');
  if(sec.task)h+=`<div id="visitFields"><label>رقم واتساب (يُحفظ في جهازك وفي الـ Sheet الخاص بك فقط)</label><input type="tel" name="phone" dir="ltr" placeholder="مثال: 01001234567" value="${esc(it.phone||"")}">${f("lastContacted","آخر تواصل","date")}</div>`;
  h+=`<label>ملاحظات</label><textarea name="notes">${esc(it.notes||"")}</textarea>`;
  h+=`<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`;
@@ -554,7 +569,7 @@ function openForm(list,id,pre){
  const vf=$("#visitFields",m);if(vf){const sh=()=>vf.classList.toggle("hidden",form.category.value!=="visit");form.category.onchange=sh;sh()}
  form.onsubmit=e=>{e.preventDefault();
   const o=id?it:{id:uid(),createdAt:Date.now()};const RF=["title","time","place","people","notes"],pre=id?RF.map(k=>it[k]||"").join("|"):"";
-  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});
+  ["title","category","repeat","date","time","endDate","priority","status","place","people","notes","phone","lastContacted","recur","attend"].forEach(k=>{if(form[k])o[k]=form[k].value.trim()});
   if(!o.title)return;if(list==="tasks"){if(o.status==="done"&&!o.doneAt)o.doneAt=todayISO();if(o.status!=="done")o.doneAt=""}o.updatedAt=Date.now();
   if(!id)state[list].push(o);save();ensureRecurring();closeModal();render();toast("تم الحفظ");
   if(id&&(o.recur||o.parent)&&RF.map(k=>o[k]||"").join("|")!==pre)setTimeout(()=>rChoice("تطبيق هذا التعديل على:",c=>{if(c==="one")return;seriesItems(list,o).filter(x=>x.id!==o.id&&!x.deleted&&(c==="all"||x.date>o.date)).forEach(x=>{RF.forEach(f=>x[f]=o[f]);x.updatedAt=Date.now()});save();render();toast("تم التطبيق")}),60)};
