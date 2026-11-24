@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.5 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.6 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -620,6 +620,7 @@ function mergeInto(a,b){ // per-item merge by id, newer updatedAt wins; nothing 
  if((sb.profileAt||0)>(sa.profileAt||0)){out.settings.profile=sb.profile;out.settings.profileAt=sb.profileAt}
  if((sb.templatesAt||0)>(sa.templatesAt||0)){out.settings.templates=sb.templates;out.settings.templatesAt=sb.templatesAt}
  if((sb.checklistsAt||0)>(sa.checklistsAt||0)){out.settings.checklists=sb.checklists;out.settings.checklistsAt=sb.checklistsAt}
+ {const m=new Map();(sb.sermons||[]).forEach(x=>x&&x.id&&m.set(x.id,x));(sa.sermons||[]).forEach(x=>{if(!x||!x.id)return;const y=m.get(x.id);if(!y||(x.updatedAt||0)>=(y.updatedAt||0))m.set(x.id,x)});if(m.size)out.settings.sermons=[...m.values()]}
  LISTS.forEach(k=>{const m=new Map();((b&&b[k])||[]).forEach(x=>m.set(x.id,x));
   (a[k]||[]).forEach(x=>{const y=m.get(x.id);if(!y||(x.updatedAt||0)>=(y.updatedAt||0))m.set(x.id,x)});out[k]=[...m.values()]});
  return norm(out)}
@@ -741,6 +742,25 @@ function ckApply(p){
  $("#ckS",m).onchange=pv;$("#ckD",m).onchange=pv;pv();
  $("#ckEd",m).onclick=()=>{closeModal();ckDialog()};
  $("#ckGo",m).onclick=()=>{const t=T[$("#ckS",m).value],d=$("#ckD",m).value||todayISO();t.steps.forEach(x=>state.tasks.push({id:uid(),createdAt:Date.now(),updatedAt:Date.now(),title:x.t+" — "+p.title,category:"general",date:addDays(d,x.d),status:"pending",priority:"normal",people:p.title,notes:"من قائمة: "+t.name}));save();closeModal();render();toast("أُنشئت "+t.steps.length+" مهام")}}
+const sermons=()=>state.settings.sermons||(state.settings.sermons=[]);
+function sermonDialog(showDel){
+ const all=sermons().filter(x=>!!x.deleted===!!showDel).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.updatedAt||0)-(a.updatedAt||0));
+ const m=openModal(`<h3>📖 مكتبة العظات</h3><input id="sq" placeholder="🔍 بحث (عنوان، آيات، موضوع، نص)" autocomplete="off" style="margin:6px 0"><div id="sl"></div><div class="actions"><button class="btn primary" id="sAdd">+ عظة جديدة</button><button class="btn" id="sTog">${showDel?"العظات الحالية":"المحذوفة"}</button><button class="btn" data-close>إغلاق</button></div>`);
+ const draw=()=>{const q=$("#sq",m).value.trim().toLowerCase();const a=all.filter(x=>!q||((x.title||"")+" "+(x.ref||"")+" "+(x.tags||"")+" "+(x.text||"")).toLowerCase().includes(q));
+  $("#sl",m).innerHTML=a.length?a.map(x=>`<div class="rp-li" data-sid="${x.id}" style="cursor:pointer"><span>${esc(x.title)}<small class="muted" style="display:block">${esc([x.ref,x.tags].filter(Boolean).join(" · "))}</small></span><span class="muted sm">${x.date?esc(fmtDate(x.date,{day:"numeric",month:"short",year:"numeric"})):""}</span></div>`).join(""):`<div class="muted sm">${all.length?"لا نتائج":"لا توجد عظات بعد"}</div>`;
+  m.querySelectorAll("[data-sid]").forEach(r=>r.onclick=()=>{closeModal();sermonEdit(r.dataset.sid,showDel)})};
+ $("#sq",m).oninput=draw;draw();
+ $("#sAdd",m).onclick=()=>{closeModal();sermonEdit(null)};
+ $("#sTog",m).onclick=()=>{closeModal();sermonDialog(!showDel)}}
+function sermonEdit(id,wasDel){
+ const x=id?sermons().find(y=>y.id===id):{};
+ const f=(k,l,ty="text",e="")=>`<label>${l}</label><input type="${ty}" name="${k}" value="${esc(x[k]||"")}" ${e}>`;
+ const m=openModal(`<h3>${id?"عظة":"عظة جديدة"}</h3><form id="sf">${f("title","العنوان","text","required")}<div class="row2"><div>${f("date","التاريخ","date")}</div><div>${f("ref","الآيات (مثال: يو 3: 16)")}</div></div>${f("tags","الموضوع / وسوم (مفصولة بفاصلة)")}<label>النص والنقاط</label><textarea name="text" style="min-height:220px">${esc(x.text||"")}</textarea><div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?(x.deleted?`<button class="btn" type="button" id="sRes" style="margin-inline-start:auto">استعادة</button>`:`<button class="btn" type="button" id="sCp">نسخ / مشاركة</button><button class="btn danger" type="button" id="sDel">حذف</button>`):""}</div></form>`);
+ const form=$("#sf",m);
+ form.onsubmit=e=>{e.preventDefault();const o=id?x:{id:uid(),createdAt:Date.now()};["title","date","ref","tags","text"].forEach(k=>o[k]=form[k].value.trim());if(!o.title)return;o.updatedAt=Date.now();if(!id)sermons().push(o);save();closeModal();toast("تم الحفظ");sermonDialog(false)};
+ const d=$("#sDel",m);if(d)d.onclick=()=>{if(!confirm("نقل هذه العظة إلى المحذوفة؟ (يمكن استعادتها)"))return;x.deleted=true;x.updatedAt=Date.now();save();closeModal();toast("نُقلت إلى المحذوفة");sermonDialog(false)};
+ const r=$("#sRes",m);if(r)r.onclick=()=>{x.deleted=false;x.updatedAt=Date.now();save();closeModal();toast("تمت الاستعادة");sermonDialog(false)};
+ const c=$("#sCp",m);if(c)c.onclick=async()=>{const t=[x.title,[x.date,x.ref].filter(Boolean).join(" · "),"",x.text].join("\n").trim();try{if(navigator.share){await navigator.share({title:x.title,text:t});return}}catch(e){if(e.name==="AbortError")return}try{await navigator.clipboard.writeText(t);toast("تم النسخ")}catch(e){toast("تعذر النسخ")}}}
 function tplDialog(){
  const T=JSON.parse(JSON.stringify(tpls()));
  const m=openModal(`<h3>قوالب رسائل الافتقاد</h3><p class="muted sm">استخدم {الاسم} ليحل محله اسم الشخص.</p><div id="tl"></div><div class="actions"><button class="btn" id="tAdd">+ قالب</button><button class="btn primary" id="tSave">حفظ</button><button class="btn" data-close>إغلاق</button></div>`);
@@ -1027,8 +1047,8 @@ async function calSync(btn){
 
 /* ---------- backup / theme / install ---------- */
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="ckB">📋 قوائم المتابعة (قوالب)</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#ckB",m).onclick=ckDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="srB">📖 مكتبة العظات</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="ckB">📋 قوائم المتابعة (قوالب)</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#srB",m).onclick=()=>sermonDialog(false);$("#ckB",m).onclick=ckDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
