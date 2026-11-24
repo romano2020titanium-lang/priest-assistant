@@ -142,7 +142,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.4 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v9.5 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -619,6 +619,7 @@ function mergeInto(a,b){ // per-item merge by id, newer updatedAt wins; nothing 
  const out={version:1,settings:Object.assign({},sb,sa)};
  if((sb.profileAt||0)>(sa.profileAt||0)){out.settings.profile=sb.profile;out.settings.profileAt=sb.profileAt}
  if((sb.templatesAt||0)>(sa.templatesAt||0)){out.settings.templates=sb.templates;out.settings.templatesAt=sb.templatesAt}
+ if((sb.checklistsAt||0)>(sa.checklistsAt||0)){out.settings.checklists=sb.checklists;out.settings.checklistsAt=sb.checklistsAt}
  LISTS.forEach(k=>{const m=new Map();((b&&b[k])||[]).forEach(x=>m.set(x.id,x));
   (a[k]||[]).forEach(x=>{const y=m.get(x.id);if(!y||(x.updatedAt||0)>=(y.updatedAt||0))m.set(x.id,x)});out[k]=[...m.values()]});
  return norm(out)}
@@ -720,6 +721,26 @@ function openWA(id){
   window.open("https://wa.me/"+n+"?text="+encodeURIComponent($("#wTxt",m).value),"_blank","noopener");
   it.lastContacted=todayISO();it.updatedAt=Date.now();save();closeModal();render();toast("تم تسجيل آخر تواصل")};
 }
+const DEFAULT_CK=[{name:"بعد خروج من المستشفى",steps:[{t:"اتصال للاطمئنان",d:1},{t:"زيارة",d:3},{t:"صلاة وتناول",d:7},{t:"متابعة أخيرة",d:14}]},{name:"أسرة جديدة",steps:[{t:"زيارة ترحيب",d:3},{t:"التعريف بالخدمات والاجتماعات",d:10},{t:"متابعة",d:30}]},{name:"عزاء",steps:[{t:"زيارة تعزية",d:1},{t:"اتصال",d:7},{t:"افتقاد",d:40}]}];
+const cks=()=>(state.settings.checklists&&state.settings.checklists.length)?state.settings.checklists:DEFAULT_CK;
+function ckDialog(){
+ const T=JSON.parse(JSON.stringify(cks()));
+ const m=openModal(`<h3>📋 قوائم المتابعة</h3><p class="muted sm">كل سطر خطوة بالشكل: النص | عدد الأيام بعد البداية. عند التطبيق على شخص تُنشأ مهام عادية بتواريخها.</p><div id="cl"></div><div class="actions"><button class="btn" id="cAdd">+ قائمة</button><button class="btn primary" id="cSave">حفظ</button><button class="btn" data-close>إغلاق</button></div>`);
+ const txt=t=>t.steps.map(x=>x.t+" | "+x.d).join("\n");
+ const draw=()=>{$("#cl",m).innerHTML=T.map((t,i)=>`<div style="border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:8px"><input data-cn="${i}" value="${esc(t.name)}"><textarea data-cx="${i}" style="margin-top:6px;min-height:110px">${esc(txt(t))}</textarea><button class="btn sm danger" data-cd="${i}" style="margin-top:6px">حذف القائمة</button></div>`).join("");
+  m.querySelectorAll("[data-cn]").forEach(e=>e.oninput=()=>T[e.dataset.cn].name=e.value);
+  m.querySelectorAll("[data-cx]").forEach(e=>e.oninput=()=>T[e.dataset.cx].steps=e.value.split("\n").map(l=>{const a=l.split("|");return{t:a[0].trim(),d:Math.max(0,parseInt(a[1])||0)}}).filter(x=>x.t));
+  m.querySelectorAll("[data-cd]").forEach(e=>e.onclick=()=>{if(!confirm("حذف هذه القائمة؟"))return;T.splice(e.dataset.cd,1);draw()})};
+ draw();
+ $("#cAdd",m).onclick=()=>{T.push({name:"قائمة جديدة",steps:[{t:"خطوة",d:1}]});draw()};
+ $("#cSave",m).onclick=()=>{state.settings.checklists=T.filter(t=>t.name.trim()&&t.steps.length);state.settings.checklistsAt=Date.now();save();closeModal();toast("تم الحفظ")}}
+function ckApply(p){
+ const T=cks();
+ const m=openModal(`<h3>📋 قائمة متابعة: ${esc(p.title)}</h3><label>القائمة</label><select id="ckS">${T.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join("")}</select><label>تاريخ البداية</label><input type="date" id="ckD" value="${todayISO()}"><div id="ckP" class="muted sm" style="margin-top:8px"></div><div class="actions"><button class="btn primary" id="ckGo">إنشاء المهام</button><button class="btn" id="ckEd">تعديل القوائم</button><button class="btn" data-close>إلغاء</button></div>`);
+ const pv=()=>{const t=T[$("#ckS",m).value],d=$("#ckD",m).value||todayISO();$("#ckP",m).innerHTML=t.steps.map(x=>`• ${esc(x.t)} · ${esc(fmtDate(addDays(d,x.d),{day:"numeric",month:"short"}))}`).join("<br>")};
+ $("#ckS",m).onchange=pv;$("#ckD",m).onchange=pv;pv();
+ $("#ckEd",m).onclick=()=>{closeModal();ckDialog()};
+ $("#ckGo",m).onclick=()=>{const t=T[$("#ckS",m).value],d=$("#ckD",m).value||todayISO();t.steps.forEach(x=>state.tasks.push({id:uid(),createdAt:Date.now(),updatedAt:Date.now(),title:x.t+" — "+p.title,category:"general",date:addDays(d,x.d),status:"pending",priority:"normal",people:p.title,notes:"من قائمة: "+t.name}));save();closeModal();render();toast("أُنشئت "+t.steps.length+" مهام")}}
 function tplDialog(){
  const T=JSON.parse(JSON.stringify(tpls()));
  const m=openModal(`<h3>قوالب رسائل الافتقاد</h3><p class="muted sm">استخدم {الاسم} ليحل محله اسم الشخص.</p><div id="tl"></div><div class="actions"><button class="btn" id="tAdd">+ قالب</button><button class="btn primary" id="tSave">حفظ</button><button class="btn" data-close>إغلاق</button></div>`);
@@ -850,9 +871,10 @@ function hhBox(p){const L=hhMembers(p);if(!p.id||L.length<2)return "";return `<d
 function openPerson(id){
  const p=id?state.people.find(x=>x.id===id):{};
  const f=(k,l,ty="text",x="")=>`<label>${l}</label><input type="${ty}" name="${k}" value="${esc(p[k]||"")}" ${x}>`;
- const m=openModal(`<h3>${id?"تعديل":"إضافة"} شخص</h3><form id="f">${f("title","الاسم / الأسرة","text","required")}<label>الأسرة (اسم العائلة لتجميع الأفراد)</label><input name="household" list="hhL" value="${esc(p.household||"")}" autocomplete="off"><datalist id="hhL">${hhNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>${f("phone","رقم واتساب (في جهازك والـ Sheet فقط)","tel",'dir="ltr"')}<div class="row2"><div>${f("birthday","تاريخ الميلاد","date")}</div><div>${f("nameDay","عيد الشفيع (اسم القديس)","date")}</div></div>${f("place","العنوان / المنطقة")}${f("lastVisit","آخر افتقاد","date")}${f("planDate","موعد افتقاد مخطط (اختياري)","date")}<label>ملاحظات عائلية</label><textarea name="notes">${esc(p.notes||"")}</textarea>${hhBox(p)}<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`);
+ const m=openModal(`<h3>${id?"تعديل":"إضافة"} شخص</h3><form id="f">${f("title","الاسم / الأسرة","text","required")}<label>الأسرة (اسم العائلة لتجميع الأفراد)</label><input name="household" list="hhL" value="${esc(p.household||"")}" autocomplete="off"><datalist id="hhL">${hhNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>${f("phone","رقم واتساب (في جهازك والـ Sheet فقط)","tel",'dir="ltr"')}<div class="row2"><div>${f("birthday","تاريخ الميلاد","date")}</div><div>${f("nameDay","عيد الشفيع (اسم القديس)","date")}</div></div>${f("place","العنوان / المنطقة")}${f("lastVisit","آخر افتقاد","date")}${f("planDate","موعد افتقاد مخطط (اختياري)","date")}<label>ملاحظات عائلية</label><textarea name="notes">${esc(p.notes||"")}</textarea>${hhBox(p)}${id?`<button type="button" class="btn" id="ckBtn" style="margin-top:8px">📋 قائمة متابعة لهذا الشخص</button>`:""}<div class="actions"><button class="btn primary" type="submit">حفظ</button><button class="btn" type="button" data-close>إلغاء</button>${id?`<button class="btn danger" type="button" id="delBtn" style="margin-inline-start:auto">حذف</button>`:""}</div></form>`);
  const form=$("#f",m);
  form.onsubmit=e=>{e.preventDefault();const o=id?p:{id:uid(),createdAt:Date.now()};["title","household","phone","birthday","nameDay","place","lastVisit","planDate","notes"].forEach(k=>o[k]=form[k].value.trim());if(!o.title)return;o.updatedAt=Date.now();if(!id)state.people.push(o);save();closeModal();render();toast("تم الحفظ")};
+ const cb=$("#ckBtn",m);if(cb)cb.onclick=()=>{closeModal();ckApply(p)};
  m.querySelectorAll("[data-hho]").forEach(b=>b.onclick=()=>{closeModal();openPerson(b.dataset.hho)});
  const hv=$("#hhVisit",m);if(hv)hv.onclick=()=>{const L=hhMembers(p);if(!confirm("تسجيل افتقاد اليوم لكل أفراد الأسرة ("+L.length+")؟"))return;L.forEach(x=>{x.lastVisit=todayISO();x.planDate="";x.updatedAt=Date.now()});save();closeModal();render();toast("تم تسجيل افتقاد الأسرة ✓")};
  if(id)$("#delBtn",m).onclick=()=>{if(confirm("حذف هذا الشخص؟")){p.deleted=true;p.updatedAt=Date.now();save();closeModal();render();toast("تم الحذف")}}}
@@ -1005,8 +1027,8 @@ async function calSync(btn){
 
 /* ---------- backup / theme / install ---------- */
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="ckB">📋 قوائم المتابعة (قوالب)</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#ckB",m).onclick=ckDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
