@@ -61,7 +61,7 @@ h3.sec{font-size:15px;margin:18px 0 8px;color:var(--muted)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-top:3px}
 .badge{font-size:11px;padding:1px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border)}
 .badge.visit{color:var(--accent-text);border-color:var(--brand)}
-.date-box{flex:none;width:52px;text-align:center;background:var(--surface-2);border-radius:10px;padding:4px 0}
+.date-box em{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--brand);white-space:nowrap}.date-box{flex:none;width:62px;text-align:center;background:var(--surface-2);border-radius:10px;padding:4px 0}
 .date-box b{display:block;font-size:20px;line-height:1.1}.date-box span{font-size:11px;color:var(--muted)}
 .check{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);background:none;cursor:pointer;display:grid;place-items:center;color:var(--brand-ink);margin-top:2px}
 .card.done .check{background:var(--done);border-color:var(--done)}
@@ -151,7 +151,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.2 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.3 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -213,7 +213,7 @@ function render(){document.documentElement.dataset.theme=state.settings.theme||"
 function sortItems(a,b){const da=a.date||"9999",db=b.date||"9999";return da===db?(a.time||"").localeCompare(b.time||""):da.localeCompare(db)}
 function card(sec,it){
  const d=it.date?new Date(it.date+"T12:00:00"):null;
- const box=d?`<div class="date-box"><b>${d.toLocaleDateString(LOCL,{day:"numeric"})}</b><span>${d.toLocaleDateString(LOCL,{month:"short"})}</span></div>`:"";
+ const box=d?`<div class="date-box"><em>${d.toLocaleDateString(LOCL,{weekday:"long"})}</em><b>${d.toLocaleDateString(LOCL,{day:"numeric"})}</b><span>${d.toLocaleDateString(LOCL,{month:"short"})}</span></div>`:"";
  const meta=[];
  if(it.time)meta.push("🕒 "+fmtTime(it.time));
  if(it.endDate)meta.push("حتى "+fmtDate(it.endDate,{day:"numeric",month:"long"}));
