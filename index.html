@@ -134,6 +134,41 @@ textarea{min-height:80px;resize:vertical}
 .srch-r{padding:8px 0;border-top:1px solid var(--border);cursor:pointer}.srch-r small{color:var(--muted);display:block}
 .foot{margin:28px 0 8px;text-align:center;color:var(--muted);font-size:12px;padding-bottom:130px}
 @media(min-width:821px){.foot{padding-bottom:0}}
+/* ===== v11 visual refresh: palette + polish only, no logic ===== */
+:root{--cross:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M60 18v84M30 48h60' stroke='%23c9962b' stroke-width='5' stroke-linecap='round' opacity='.10'/%3E%3C/svg%3E")}
+[data-theme="light"]{--bg:#fbf5e9;--surface:#ffffff;--surface-2:#f7efdd;--border:#ecdfc3;--text:#2b2140;--muted:#6f6584;--brand:#e0a02a;--brand-ink:#2a1a00;--accent-text:#7a3fa0;--grad:linear-gradient(135deg,#f6c453,#ee9b3a);--hero:linear-gradient(135deg,#fff1cf 0%,#ffe3e8 52%,#e3e9ff 100%);--shadow:0 6px 18px rgba(122,63,160,.10);--urgent:#e0415a;--important:#e8891d;--done:#2bb673;--sidebg:linear-gradient(180deg,#fff 0%,#fdf2da 100%)}
+[data-theme="dark"]{--bg:#0b1020;--surface:#131b36;--surface-2:#1b2547;--border:#2a3763;--text:#f3eee0;--muted:#a1a9c9;--brand:#f2c14e;--brand-ink:#1b1300;--accent-text:#f6cf6d;--grad:linear-gradient(135deg,#f7d067,#e9a23b);--hero:linear-gradient(135deg,#1f2a5a 0%,#3a2a5e 55%,#5a2f4f 100%);--shadow:0 6px 20px rgba(0,0,0,.35);--sidebg:linear-gradient(180deg,#131b36 0%,#0e1530 100%)}
+body{background:var(--bg) var(--cross)}
+.side{background:var(--sidebg);box-shadow:var(--shadow)}
+.logo{box-shadow:0 0 0 2px var(--brand),0 0 0 5px color-mix(in srgb,var(--brand) 25%,transparent)}
+.tab{transition:background .2s,transform .2s}.tab:hover{transform:translateX(-2px)}
+.tab.on{background:var(--grad);color:var(--brand-ink);border-inline-start-color:transparent;box-shadow:0 4px 12px color-mix(in srgb,var(--brand) 40%,transparent)}
+.tab.on .n{background:#ffffff55;color:inherit}
+.btn{border-radius:12px;transition:transform .15s,box-shadow .2s,border-color .2s}.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn.primary{background:var(--grad);box-shadow:0 4px 12px color-mix(in srgb,var(--brand) 35%,transparent)}
+.chip{transition:all .2s}.chip.on{background:var(--grad);box-shadow:0 3px 10px color-mix(in srgb,var(--brand) 35%,transparent)}
+.hero{position:relative;overflow:hidden;border:none;border-radius:24px;background:var(--hero);box-shadow:var(--shadow);color:var(--text)}
+.hero::after{content:"✝";position:absolute;inset-inline-start:-6px;top:-22px;font-size:130px;line-height:1;color:var(--brand);opacity:.16;pointer-events:none}
+.hero h2{font-size:26px;letter-spacing:.2px}
+[data-theme="light"] .hero .hi{color:#7a3fa0}[data-theme="light"] .hero .muted{color:#5a4a78}
+.stat{border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);transition:transform .15s,border-color .2s;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;inset-inline:0;top:0;height:4px;background:var(--grad)}
+.stat:hover{transform:translateY(-2px)}
+.stat .v{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-theme="light"] .stat .v{background:linear-gradient(135deg,#7a3fa0,#d4772c);-webkit-background-clip:text;background-clip:text}
+h3.sec{color:var(--accent-text);font-weight:800;display:flex;align-items:center;gap:8px}
+h3.sec::before{content:"";width:6px;height:16px;border-radius:3px;background:var(--grad)}
+.card{border-radius:16px;box-shadow:var(--shadow);transition:transform .15s,border-color .2s}.card:hover{transform:translateY(-1px)}
+.date-box{background:var(--grad);color:var(--brand-ink);border-radius:12px}.date-box span{color:inherit;opacity:.75}.date-box em{color:inherit}
+.check{border-color:var(--brand)}
+.dchip,.pcard,.cal-d{box-shadow:var(--shadow);border-radius:14px}
+.cal-d.today{box-shadow:0 0 0 2px var(--brand),0 4px 12px color-mix(in srgb,var(--brand) 40%,transparent)}
+.pbar i{background:var(--grad)}
+.sheet{border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.toast{background:var(--grad)}
+.bottom{background:var(--sidebg);box-shadow:0 -6px 18px rgba(0,0,0,.10)}
+.bottom button.on{color:var(--accent-text);font-weight:800}
+.empty{border-radius:18px;background:color-mix(in srgb,var(--brand) 6%,transparent)}
 </style></head><body>
 <div class="layout">
  <aside class="side">
@@ -151,7 +186,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.4 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v11.0 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
