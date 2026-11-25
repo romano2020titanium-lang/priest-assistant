@@ -169,6 +169,7 @@ h3.sec::before{content:"";width:6px;height:16px;border-radius:3px;background:var
 .bottom{background:var(--sidebg);box-shadow:0 -6px 18px rgba(0,0,0,.10)}
 .bottom button.on{color:var(--accent-text);font-weight:800}
 .empty{border-radius:18px;background:color-mix(in srgb,var(--brand) 6%,transparent)}
+.gd{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;margin:6px 0;padding:0 12px}.gd summary{cursor:pointer;font-weight:700;padding:10px 0;color:var(--accent-text)}.gd ol{margin:0 0 10px;padding-inline-start:22px;line-height:1.7}.gdl{max-height:62vh;overflow:auto;margin:8px 0}
 </style></head><body>
 <div class="layout">
  <aside class="side">
@@ -184,9 +185,9 @@ h3.sec::before{content:"";width:6px;height:16px;border-radius:3px;background:var
  </aside>
  <main>
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
-   <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
+   <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="themeBtn2" title="فاتح / داكن" aria-label="الوضع الفاتح / الداكن">🌓</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v11.0 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v12.0 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -293,7 +294,7 @@ function renderHome(){
  soon.sort((a,b)=>sortItems(a[1],b[1]));
  const late=live("tasks").filter(x=>x.status!=="done"&&x.date&&x.date<t);
  const todayTasks=live("tasks").filter(x=>x.status!=="done"&&x.date===t).length;
- $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}<button class="btn sm" id="pfEdit" style="margin-inline-start:auto">✎ الملف الشخصي</button></div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length} متأخرة`:""}</p></div>
+ $("#view").innerHTML=`<div class="hero"><div class="hi">${hi}<button class="btn sm" id="gdHome" data-nt style="margin-inline-start:auto">${(GUIDE[LANG]||GUIDE.ar).title}</button><button class="btn sm" id="pfEdit">✎ الملف الشخصي</button></div><h2>${fmtDate(new Date(),{weekday:"long",day:"numeric",month:"long"})}</h2><p class="muted" style="margin:0">${todayTasks?`عندك ${todayTasks} مهمة اليوم`:"لا توجد مهام مجدولة اليوم"}${late.length?` · ${late.length} متأخرة`:""}</p></div>
  <div class="dstrip" id="dstrip">${dayStrip()}</div>
  <div id="dailyBox">${dailyHtml()}</div>
  <div class="stats">${SECTIONS.filter(s=>s.list).map(s=>`<button class="stat" data-go="${s.id}"><div class="v">${c[s.list]}</div><div class="l">${s.label}</div></button>`).join("")}</div>
@@ -304,7 +305,7 @@ function renderHome(){
  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ui.tab=b.dataset.go;ui.filter=ui.tab==="tasks"?"open":"upcoming";render()});
  document.querySelectorAll("#dstrip [data-ds]").forEach(b=>b.onclick=()=>dayDialog(b.dataset.ds));
  bindCards($("#view"));bindToday();dailyInit();
- $("#qa").onclick=quickAdd;{const pe=$("#pfEdit");if(pe)pe.onclick=profileDialog}
+ $("#qa").onclick=quickAdd;{const pe=$("#pfEdit");if(pe)pe.onclick=profileDialog;const ge=$("#gdHome");if(ge)ge.onclick=guideDialog}
 }
 
 /* ===== كلمة اليوم + قراءات اليوم ===== */
@@ -1094,9 +1095,14 @@ function pinCfg(){try{return JSON.parse(localStorage.getItem(PINK)||"null")}catc
 function showLock(){
  if(!pinCfg()||$("#lock"))return;
  const d=document.createElement("div");d.className="lock";d.id="lock";
- d.innerHTML=`<div class="box"><div class="logo">✝</div><h3>مساعد الكاهن الذكي</h3><p class="muted sm">أدخل الرقم السري</p><input id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8"><p id="pinErr" class="sm" style="color:var(--urgent);min-height:20px"></p><button class="btn" id="waGo" style="display:none">🔓 فتح بالبصمة / الوجه</button></div>`;
- document.body.appendChild(d);const i=$("#pinIn");i.focus();
- if(localStorage.getItem(WAK))waAvail().then(ok=>{if(!ok)return;const g=$("#waGo");if(!g)return;g.style.display="";const go=async()=>{try{if(await waCheck()){d.remove();hiddenAt=0}}catch(e){$("#pinErr").textContent="تعذر التحقق بالبصمة، استخدم الرقم السري"}};g.onclick=go})
+ d.innerHTML=`<div class="box"><div class="logo">✝</div><h3>مساعد الكاهن الذكي</h3><p class="muted sm" id="pinHint">أدخل الرقم السري</p><button class="btn primary" id="waGo" style="display:none;width:100%;padding:14px;font-size:17px">🔓 فتح بالبصمة / الوجه</button><div id="pinWrap"><input id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div><p id="pinErr" class="sm" style="color:var(--urgent);min-height:20px"></p></div>`;
+ document.body.appendChild(d);const i=$("#pinIn"),pw=$("#pinWrap");
+ const showPin=msg=>{pw.style.display="";$("#pinHint").textContent="أدخل الرقم السري";if(msg)$("#pinErr").textContent=msg;try{i.focus()}catch(e){}};
+ if(localStorage.getItem(WAK)){pw.style.display="none";$("#pinHint").textContent="افتح بالبصمة";
+  waAvail().then(ok=>{if(!ok){showPin();return}const g=$("#waGo");if(!g)return;g.style.display="";let busy=false;
+   const go=async()=>{if(busy)return;busy=true;$("#pinErr").textContent="";try{if(await waCheck()){d.remove();hiddenAt=0;return}showPin("تعذر أخذ البصمة، ادخل الرقم السري")}catch(e){showPin("تعذر أخذ البصمة، ادخل الرقم السري")}busy=false};
+   g.onclick=go;go()}).catch(()=>showPin())}
+ else i.focus();
  i.oninput=async()=>{const c=pinCfg();if(i.value.length<c.len)return;if(await hashPin(i.value,c.salt)===c.hash){d.remove();hiddenAt=0}else{$("#pinErr").textContent="رقم خاطئ";i.value=""}}}
 let hiddenAt=0;
 const WAK="priest-webauthn";
@@ -1133,9 +1139,69 @@ async function calSync(btn){
  catch(e){toast("تعذّرت مزامنة التقويم: "+e.message)}finally{btn.disabled=false;btn.textContent=old}}
 
 /* ---------- backup / theme / install ---------- */
+/* ---------- Guide (ar / en / it) ---------- */
+const GUIDE={
+ar:{title:"📘 الدليل",intro:"مرحبًا بك. هذا الدليل يشرح كل ما يمكنك فعله في التطبيق خطوة بخطوة. اضغط على أي عنوان لفتحه.",close:"إغلاق",secs:[
+["🚀 البداية السريعة",["افتح الصفحة الرئيسية: فيها تاريخ اليوم وشريط الأيام القادمة وآية اليوم وقراءات اليوم.","للإضافة السريعة اضغط زر «+ إضافة سريعة» أسفل الصفحة الرئيسية واختر النوع (مهمة، اجتماع، قداس، شخص...).","كل ما تكتبه يُحفظ تلقائيًا على جهازك."]],
+["🧭 التنقل بين الأقسام",["على الهاتف: الأقسام في الشريط السفلي (الرئيسية، التقويم، افتقاد، الخدمات، الاجتماعات، النهضات، القداسات، المهام، الصلاة، الأسر، المخدومون، الإرشاد، تقارير).","على الكمبيوتر: القائمة الجانبية على اليمين.","في الشريط العلوي: زر المزامنة، 🔍 البحث، 🌓 فاتح/داكن، ⋯ المزيد."]],
+["➕ إضافة وتعديل العناصر",["ادخل القسم المطلوب (مثلًا الاجتماعات) واضغط «+ إضافة».","املأ البيانات واضغط «حفظ».","اضغط على أي عنصر لتعديله. علامة ✓ تعني «تمت».","الحذف ينقل العنصر إلى «المحذوفات» ويمكن استعادته من ⋯ المزيد."]],
+["👥 المخدومون والأسر",["ادخل «المخدومون» واضغط «+ إضافة شخص».","في خانة «الأسرة» اكتب اسم العائلة نفسه لكل أفرادها لتجميعهم معًا.","أرقام التليفونات والزيارات تبقى على جهازك وفي الجدول الخاص بك فقط."]],
+["🚶 الافتقاد",["قسم «افتقاد» يعرض من يحتاج زيارة حسب آخر زيارة.","اضغط على الشخص لتسجيل زيارة أو تحديد موعد.","من ⋯ المزيد › قوالب رسائل الافتقاد يمكنك تعديل نص رسالة الواتساب. كل رسالة تُرسل بيدك، ولا يوجد إرسال جماعي تلقائي."]],
+["📅 التقويم والمواعيد",["قسم «التقويم» يعرض الشهر مع نقاط ملونة للأحداث. اضغط على يوم لرؤية تفاصيله.","لربطه بتقويم جوجل: ⋯ المزيد › مزامنة مع تقويم جوجل."]],
+["📊 التقارير",["ادخل «تقارير» لرؤية ملخص الخدمات والاجتماعات والزيارات.","لتصدير جدول: ⋯ المزيد › تصدير جدول (Excel / CSV)."]],
+["🌐 تغيير اللغة",["اضغط ⋯ المزيد.","اختر أول بند: «🌐 اللغة · Language · Lingua».","اختر العربية أو English أو Italiano."]],
+["🌓 الوضع الفاتح والداكن",["على الهاتف: اضغط زر 🌓 في الشريط العلوي.","على الكمبيوتر: زر «الوضع الفاتح / الداكن» في أسفل القائمة الجانبية.","يتذكر التطبيق اختيارك."]],
+["🔒 القفل والبصمة",["اضغط ⋯ المزيد › «🔒 قفل التطبيق (رقم سري)» واختر رقمًا سريًا.","بعد ذلك يمكنك اختيار «تفعيل البصمة / الوجه».","عند الفتح تبدأ البصمة مباشرة، وإذا فشلت أو أُلغيت يظهر حقل الرقم السري.","الرقم السري يبقى دائمًا بديلًا."]],
+["🔔 التنبيهات",["⋯ المزيد › «🔔 التنبيهات والصوت» لضبط التذكيرات."]],
+["🔗 المزامنة مع جدولك الخاص",["اضغط زر «مزامنة» في الأعلى أو ⋯ المزيد › «ربط المزامنة (Google Sheet الخاص بك)».","اتبع الخطوات على الشاشة لإنشاء جدولك الخاص.","بعد الربط تتزامن بياناتك بين هاتفك والكمبيوتر."]],
+["🛟 النسخ الاحتياطي والاستعادة",["⋯ المزيد › «🛟 النسخ الاحتياطية»: نسخ تلقائية يمكن الرجوع إليها.","«تصدير نسخة (ملف)» يحفظ ملفًا على جهازك.","«استيراد نسخة (دمج دون حذف)» يضيف البيانات دون مسح الموجود.","«🗑 المحذوفات» لاسترجاع ما حذفته."]],
+["📲 تثبيت التطبيق على الشاشة الرئيسية",["أندرويد (كروم): اضغط زر «تثبيت» في الأعلى، أو قائمة المتصفح ⋮ › «تثبيت التطبيق».","آيفون (سفاري): اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».","بعد التثبيت يفتح مثل أي تطبيق."]],
+["👤 الملف الشخصي",["اضغط «✎ الملف الشخصي» في الصفحة الرئيسية، أو ⋯ المزيد › الملف الشخصي.","اكتب اسمك واسم الكنيسة وأضف صورتك."]]
+]},
+en:{title:"📘 Guide",intro:"Welcome. This guide explains everything you can do in the app, step by step. Tap a heading to open it.",close:"Close",secs:[
+["🚀 Quick start",["Open Home: it shows today's date, a strip of the coming days, the verse of the day and today's readings.","For quick adding, tap the \"+ Quick add\" button at the bottom of Home and choose the type (task, meeting, liturgy, person...).","Everything you type is saved automatically on your device."]],
+["🧭 Moving between sections",["On a phone: sections are in the bottom bar (Home, Calendar, Visits, Ministries, Meetings, Retreats, Liturgies, Tasks, Prayer, Needs, People, Guidance, Reports).","On a computer: the side menu.","Top bar: Sync button, 🔍 search, 🌓 light/dark, ⋯ More."]],
+["➕ Adding and editing items",["Open the section (for example Meetings) and tap \"+ Add\".","Fill in the details and tap Save.","Tap any item to edit it. The ✓ mark means done.","Deleting moves the item to Deleted items, and you can restore it from ⋯ More."]],
+["👥 People and households",["Open People and tap \"+ Add person\".","In the Household field, type the same family name for every family member to group them together.","Phone numbers and visit notes stay only on your device and in your own Sheet."]],
+["🚶 Visits",["The Visits section lists who needs a visit, based on the last visit.","Tap a person to record a visit or set a date.","In ⋯ More › Visit message templates you can edit the WhatsApp text. Every message is sent by you. There is no automatic mass messaging."]],
+["📅 Calendar",["Calendar shows the month with colored dots for events. Tap a day to see its details.","To link it with Google Calendar: ⋯ More › Sync with Google Calendar."]],
+["📊 Reports",["Open Reports to see a summary of ministries, meetings and visits.","To export a table: ⋯ More › Export table (Excel / CSV)."]],
+["🌐 Change the language",["Tap ⋯ More.","Choose the first item: \"🌐 Language\".","Pick العربية, English or Italiano."]],
+["🌓 Light and dark mode",["On a phone: tap the 🌓 button in the top bar.","On a computer: the light/dark button at the bottom of the side menu.","The app remembers your choice."]],
+["🔒 Lock and fingerprint",["Tap ⋯ More › \"🔒 App lock (PIN)\" and choose a PIN.","Then you can choose \"Enable fingerprint / face\".","When you open the app, the fingerprint prompt starts right away. If it fails or is cancelled, the PIN field appears.","The PIN is always available as a fallback."]],
+["🔔 Alerts",["⋯ More › \"🔔 Alerts and sound\" to set reminders."]],
+["🔗 Sync with your own Sheet",["Tap the Sync button at the top, or ⋯ More › \"Connect sync (your own Google Sheet)\".","Follow the steps on screen to create your own sheet.","After connecting, your data stays in step between phone and computer."]],
+["🛟 Backup and restore",["⋯ More › \"🛟 Backups\": automatic copies you can go back to.","\"Export a copy (file)\" saves a file on your device.","\"Import a copy (merge, no deleting)\" adds data without erasing what you have.","\"🗑 Deleted items\" brings back what you deleted."]],
+["📲 Install on the home screen",["Android (Chrome): tap the Install button at the top, or the browser menu ⋮ › Install app.","iPhone (Safari): tap Share, then Add to Home Screen.","After installing, it opens like any app."]],
+["👤 Profile",["Tap \"✎ Profile\" on Home, or ⋯ More › Profile.","Enter your name and parish and add your photo."]]
+]},
+it:{title:"📘 Guida",intro:"Benvenuto. Questa guida spiega passo passo tutto ciò che puoi fare nell'app. Tocca un titolo per aprirlo.",close:"Chiudi",secs:[
+["🚀 Inizio rapido",["Apri Home: mostra la data di oggi, la striscia dei prossimi giorni, il versetto del giorno e le letture di oggi.","Per aggiungere in fretta, tocca \"+ Aggiunta rapida\" in fondo alla Home e scegli il tipo (compito, riunione, liturgia, persona...).","Tutto ciò che scrivi viene salvato automaticamente sul tuo dispositivo."]],
+["🧭 Spostarsi tra le sezioni",["Su telefono: le sezioni sono nella barra in basso (Home, Calendario, Visite, Servizi, Riunioni, Ritiri, Liturgie, Compiti, Preghiera, Bisogni, Persone, Guida spirituale, Rapporti).","Su computer: il menu laterale.","Barra in alto: pulsante Sincronizza, 🔍 cerca, 🌓 chiaro/scuro, ⋯ Altro."]],
+["➕ Aggiungere e modificare",["Apri la sezione (per esempio Riunioni) e tocca \"+ Aggiungi\".","Compila i dati e tocca Salva.","Tocca un elemento per modificarlo. Il segno ✓ significa fatto.","Eliminando, l'elemento va negli Eliminati e puoi ripristinarlo da ⋯ Altro."]],
+["👥 Persone e famiglie",["Apri Persone e tocca \"+ Aggiungi persona\".","Nel campo Famiglia scrivi lo stesso cognome per tutti i familiari, così vengono raggruppati.","Numeri di telefono e note delle visite restano solo sul tuo dispositivo e nel tuo Foglio."]],
+["🚶 Visite",["La sezione Visite mostra chi ha bisogno di una visita, in base all'ultima visita.","Tocca una persona per registrare una visita o fissare una data.","In ⋯ Altro › Modelli messaggi di visita puoi modificare il testo di WhatsApp. Ogni messaggio lo invii tu. Non c'è invio di massa automatico."]],
+["📅 Calendario",["Il Calendario mostra il mese con puntini colorati per gli eventi. Tocca un giorno per i dettagli.","Per collegarlo a Google Calendar: ⋯ Altro › Sincronizza con Google Calendar."]],
+["📊 Rapporti",["Apri Rapporti per vedere il riepilogo di servizi, riunioni e visite.","Per esportare una tabella: ⋯ Altro › Esporta tabella (Excel / CSV)."]],
+["🌐 Cambiare lingua",["Tocca ⋯ Altro.","Scegli la prima voce: \"🌐 Lingua\".","Scegli العربية, English o Italiano."]],
+["🌓 Modo chiaro e scuro",["Su telefono: tocca il pulsante 🌓 nella barra in alto.","Su computer: il pulsante chiaro/scuro in fondo al menu laterale.","L'app ricorda la tua scelta."]],
+["🔒 Blocco e impronta",["Tocca ⋯ Altro › \"🔒 Blocco app (PIN)\" e scegli un PIN.","Poi puoi scegliere \"Attiva impronta / volto\".","Quando apri l'app, la richiesta dell'impronta parte subito. Se fallisce o viene annullata, compare il campo del PIN.","Il PIN resta sempre disponibile come alternativa."]],
+["🔔 Avvisi",["⋯ Altro › \"🔔 Avvisi e suono\" per impostare i promemoria."]],
+["🔗 Sincronizzazione con il tuo Foglio",["Tocca il pulsante Sincronizza in alto, oppure ⋯ Altro › \"Collega la sincronizzazione (il tuo Google Sheet)\".","Segui i passi sullo schermo per creare il tuo foglio.","Dopo il collegamento i dati restano allineati tra telefono e computer."]],
+["🛟 Copie di sicurezza e ripristino",["⋯ Altro › \"🛟 Copie di sicurezza\": copie automatiche a cui tornare.","\"Esporta una copia (file)\" salva un file sul dispositivo.","\"Importa una copia (unisci senza eliminare)\" aggiunge dati senza cancellare quelli esistenti.","\"🗑 Eliminati\" recupera ciò che hai eliminato."]],
+["📲 Installare nella schermata Home",["Android (Chrome): tocca Installa in alto, oppure il menu del browser ⋮ › Installa app.","iPhone (Safari): tocca Condividi, poi Aggiungi alla schermata Home.","Dopo l'installazione si apre come una normale app."]],
+["👤 Profilo",["Tocca \"✎ Profilo\" nella Home, oppure ⋯ Altro › Profilo.","Inserisci il tuo nome e la parrocchia e aggiungi la tua foto."]]
+]}};
+function guideDialog(){
+ const g=GUIDE[LANG]||GUIDE.ar;
+ const body=g.secs.map(([h,st],i)=>`<details class="gd"${i<1?" open":""}><summary>${h}</summary><ol>${st.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></details>`).join("");
+ const m=openModal(`<div data-nt><h3>${g.title}</h3><p class="muted sm">${g.intro}</p><div class="gdl">${body}</div><div class="actions"><button class="btn primary" data-close>${g.close}</button></div></div>`);
+ try{localStorage.setItem("priest-guide-seen","1")}catch(e){}
+ return m}
+
 function moreDialog(){
- const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn" id="lnB" data-nt>🌐 اللغة · Language · Lingua</button><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="srB">📖 مكتبة العظات</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="ckB">📋 قوائم المتابعة (قوالب)</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
- $("#lnB",m).onclick=()=>{closeModal();langDialog()};$("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#srB",m).onclick=()=>sermonDialog(false);$("#ckB",m).onclick=ckDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
+ const m=openModal(`<h3>المزيد</h3><div class="list"><button class="btn primary" id="gdB" data-nt>${(GUIDE[LANG]||GUIDE.ar).title}</button><button class="btn" id="lnB" data-nt>🌐 اللغة · Language · Lingua</button><button class="btn" id="alB">🔔 التنبيهات والصوت</button><button class="btn" id="trB">🗑 المحذوفات (استعادة)</button><button class="btn" id="bkB">🛟 النسخ الاحتياطية</button><button class="btn" id="lgB">📜 سجل التغييرات</button><button class="btn" id="pfB">👤 الملف الشخصي (الاسم، الكنيسة، الصورة)</button><button class="btn" id="wzB">🔗 ربط المزامنة (Google Sheet الخاص بك)</button><button class="btn" id="calB">📅 مزامنة مع تقويم جوجل</button><button class="btn" id="lockB">🔒 قفل التطبيق (رقم سري)</button><button class="btn" id="csvB">تصدير جدول (Excel / CSV)</button><button class="btn" id="privB">سياسة الخصوصية</button><button class="btn" id="srB">📖 مكتبة العظات</button><button class="btn" id="tplB">قوالب رسائل الافتقاد</button><button class="btn" id="ckB">📋 قوائم المتابعة (قوالب)</button><button class="btn" id="exp">تصدير نسخة (ملف)</button><button class="btn" id="imp">استيراد نسخة (دمج دون حذف)</button></div><div class="actions"><button class="btn" data-close>إغلاق</button></div><input type="file" id="impf" accept=".json" class="hidden">`);
+ $("#gdB",m).onclick=()=>{closeModal();guideDialog()};$("#lnB",m).onclick=()=>{closeModal();langDialog()};$("#alB",m).onclick=alertDialog;$("#trB",m).onclick=trashDialog;$("#bkB",m).onclick=backupDialog;$("#lgB",m).onclick=logDialog;$("#pfB",m).onclick=profileDialog;$("#wzB",m).onclick=()=>syncWizard(0);$("#tplB",m).onclick=tplDialog;$("#srB",m).onclick=()=>sermonDialog(false);$("#ckB",m).onclick=ckDialog;$("#calB",m).onclick=e=>calSync(e.currentTarget);$("#lockB",m).onclick=pinDialog;$("#csvB",m).onclick=csvExport;$("#privB",m).onclick=()=>window.open("privacy.html","_blank");
  $("#exp",m).onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,1)],{type:"application/json"}));a.download="priest-assistant-"+todayISO()+".json";a.click()};
  $("#imp",m).onclick=()=>$("#impf",m).click();
  $("#impf",m).onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());state=mergeInto(state,norm(j));save();closeModal();render();toast("تم الدمج")}catch(x){toast("ملف غير صالح")}};
@@ -1147,7 +1213,7 @@ addEventListener("appinstalled",()=>{["#installBtn","#installBtn2"].forEach(s=>$
 ["#installBtn","#installBtn2"].forEach(s=>$(s).onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null});
 ["#syncBtn","#syncBtn2"].forEach(s=>$(s).onclick=syncDialog);
 ["#moreBtn","#moreBtn2"].forEach(s=>$(s).onclick=moreDialog);["#srchBtn","#srchBtn2"].forEach(s=>$(s).onclick=searchDialog);
-$("#themeBtn").onclick=toggleTheme;
+$("#themeBtn").onclick=toggleTheme;$("#themeBtn2").onclick=toggleTheme;
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
 setInterval(()=>{if(!document.hidden)sync()},60000);
 addEventListener("online",()=>{toast("عاد الاتصال، جارٍ المزامنة");sync()});
@@ -1229,4 +1295,5 @@ function langDialog(){
  const m=openModal(`<h3 data-nt>🌐 اللغة / Language / Lingua</h3><div class="list" data-nt>${[["ar","العربية"],["en","English"],["it","Italiano"]].map(([k,l])=>`<button class="btn ${LANG===k?"primary":""}" data-lg="${k}">${l}${LANG===k?" ✓":""}</button>`).join("")}</div><p class="muted sm" data-nt>تُحفظ على هذا الجهاز · Saved on this device · Salvata su questo dispositivo</p><div class="actions"><button class="btn" data-close data-nt>✕</button></div>`);
  m.querySelectorAll("[data-lg]").forEach(b=>b.onclick=()=>{try{localStorage.setItem("priest-lang",b.dataset.lg)}catch(e){}location.reload()})}
 showLock();ensureRecurring();render();if(cfg())sync();
+try{if(!localStorage.getItem("priest-guide-seen")&&!cfg()&&LISTS.every(k=>!(state[k]||[]).length))setTimeout(()=>{if(!$("#lock")&&!$("#modal"))guideDialog()},900)}catch(e){}
 </script></body></html>
