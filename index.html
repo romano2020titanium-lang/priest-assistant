@@ -151,7 +151,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="mtop"><div class="brand"><div class="logo">✝</div><div><h1>مساعد الكاهن الذكي</h1></div></div>
    <div style="display:flex;gap:6px"><button class="btn sm hidden" id="installBtn2">تثبيت</button><button class="btn sm" id="syncBtn2"><span class="syncdot" id="syncDot2"></span> مزامنة</button><button class="btn sm" id="srchBtn2">🔍</button><button class="btn sm" id="moreBtn2">⋯</button></div></div>
   <div id="view"></div>
- <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.3 (2026-11-25)</span></footer>
+ <footer class="foot">Powered by: الأب شربل سمير <span dir="ltr" style="opacity:.6">· v10.4 (2026-11-25)</span></footer>
  </main>
 </div>
 <nav class="bottom" id="bottom"></nav>
@@ -685,6 +685,8 @@ function syncDialog(){
 /* ---------- public intake form link ---------- */
 function formLink(){const pr=state.settings.profile||{};const u=new URL("join.html",location.href);u.hash="";u.search="";if(pr.church)u.searchParams.set("c",pr.church);if(pr.name)u.searchParams.set("n",pr.name);return u.toString()}
 function formLinkDialog(){
+ let own=false;try{own=(JSON.parse(localStorage.getItem(CFG)||"{}").url||"").includes("AKfycbwTvSOyHrHXsGkuKsDbgV1xMWd4RXVMeuZ6TUEJAxsoZniWbbbzLKM3ZOKdO0dbATw_5w")}catch(e){}
+ if(!own){openModal(`<h3>🔗 رابط استمارة التسجيل</h3><p class="muted">هذه الميزة غير متاحة في نسختك بعد، لأنها تحتاج إعدادًا خاصًا بجدولك. حتى لا تصل بيانات الناس إلى جهة أخرى، لا يُنشأ رابط.</p><div class="actions"><button class="btn" onclick="closeModal()">إغلاق</button></div>`);return}
  const L=formLink(),msg="سلام ونعمة 🙏\nمن فضلك املأ هذه الاستمارة ببياناتك لتصل إلى أبونا:\n"+L;
  const m=openModal(`<h3>🔗 رابط استمارة التسجيل</h3><div class="muted sm">أرسل الرابط لأي شخص على واتساب. عندما يملأ بياناته تظهر في «المخدومين» عندك مع علامة «جديد» عند المزامنة التالية (خلال دقيقة تقريبًا والتطبيق مفتوح). الاستمارة لا تستطيع قراءة أي بيانات، فقط إضافة شخص جديد، والأرقام المكررة تُتجاهل.</div><textarea id="flT" readonly style="height:120px;margin-top:8px">${esc(msg)}</textarea><div class="actions"><button class="btn primary" id="flWa">💬 إرسال عبر واتساب</button><button class="btn" id="flCp">نسخ الرسالة</button><button class="btn" id="flSh">مشاركة</button><button class="btn" data-close>إغلاق</button></div>`);
  $("#flWa",m).onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
@@ -737,12 +739,13 @@ function syncWizard(step){
   catch(e){msg.style.color="var(--urgent)";msg.textContent="لم ينجح الاختبار. تأكد أن \"من لديه حق الوصول\" = أي شخص، وأنك لصقت الكود الجديد ثم نشرت نسخة جديدة."}}}
 
 /* ---------- WhatsApp visit messages (one person at a time, click-to-chat) ---------- */
-const DEFAULT_TPL=[
- {id:"t1",name:"افتقاد عام",text:"سلام ونعمة يا {الاسم}، معاك الأب شربل. حبيت أطمّن عليكم وأسأل عن أحوالكم. ربنا يحفظكم ويبارك حياتكم. 🙏"},
- {id:"t2",name:"زيارة قريبة",text:"سلام ونعمة يا {الاسم}، معاك الأب شربل. عايز أزوركم قريب بإذن ربنا. إيه الوقت المناسب ليكم؟ 🙏"},
+const TN=()=>((state.settings.profile||{}).name||"أبونا");
+const DEFAULT_TPL_F=()=>[
+ {id:"t1",name:"افتقاد عام",text:`سلام ونعمة يا {الاسم}، معاك ${TN()}. حبيت أطمّن عليكم وأسأل عن أحوالكم. ربنا يحفظكم ويبارك حياتكم. 🙏`},
+ {id:"t2",name:"زيارة قريبة",text:`سلام ونعمة يا {الاسم}، معاك ${TN()}. عايز أزوركم قريب بإذن ربنا. إيه الوقت المناسب ليكم؟ 🙏`},
  {id:"t3",name:"صلاة وتشجيع",text:"سلام ونعمة يا {الاسم}، افتكرتكم في صلاتي النهاردة. ربنا يكون معاكم ويعطيكم سلامه. لو محتاجين أي حاجة أنا في الخدمة. 🙏"},
  {id:"t4",name:"دعوة للكنيسة",text:"سلام ونعمة يا {الاسم}، بنفتقدكم في الكنيسة. نتمنى نشوفكم قريب. ربنا يبارككم. 🙏"}];
-const tpls=()=>(state.settings.templates&&state.settings.templates.length)?state.settings.templates:DEFAULT_TPL;
+const tpls=()=>(state.settings.templates&&state.settings.templates.length)?state.settings.templates:DEFAULT_TPL_F();
 function waNumber(p){let d=String(p||"").replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[^\d+]/g,"");if(d.startsWith("+"))return d.slice(1).replace(/\D/g,"");d=d.replace(/\D/g,"");if(d.startsWith("00"))return d.slice(2);if(d.startsWith("0"))return "20"+d.slice(1);return d}
 function openWA(id){
  const it=state.tasks.find(x=>x.id===id);if(!it)return;
