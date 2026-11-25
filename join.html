@@ -45,12 +45,10 @@ $("f").onsubmit=e=>{e.preventDefault();$("m").className="msg";
  if(digits.length<8||digits.length>15){show("تأكد من رقم الهاتف");$("phone").focus();return}
  if(!$("ok").checked){show("من فضلك وافق على إرسال البيانات");return}
  const go=$("go");go.disabled=true;go.textContent="جارٍ الإرسال...";
- const cb="cb"+Date.now(),p=new URLSearchParams({action:"intake",cb,name,phone,place:$("place").value,family:$("family").value,birthday:$("birthday").value,nameDay:$("nameDay").value,notes:$("notes").value,hp:$("website").value,t:Date.now()-t0});
- const s=document.createElement("script");let done=false;
- const fail=m=>{if(done)return;done=true;s.remove();go.disabled=false;go.textContent="إرسال";show(m||"تعذّر الإرسال. تأكد من الإنترنت وحاول مرة أخرى")};
- const tm=setTimeout(()=>fail(),25000);
- window[cb]=r=>{if(done)return;done=true;clearTimeout(tm);s.remove();
+ const body={action:"intake",name,phone,place:$("place").value,family:$("family").value,birthday:$("birthday").value,nameDay:$("nameDay").value,notes:$("notes").value,hp:$("website").value,t:Date.now()-t0};
+ const fail=m=>{go.disabled=false;go.textContent="إرسال";show(m||"تعذّر الإرسال. تأكد من الإنترنت وحاول مرة أخرى")};
+ const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),30000);
+ fetch(EP,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),signal:ac.signal}).then(r=>r.json()).then(r=>{clearTimeout(tm);
   if(r&&r.ok){$("box").innerHTML='<div class="ok"><div class="big">✅</div><h2>تم الاستلام</h2><p>شكرًا لك، وصلت بياناتك إلى '+(pn?"":"أبونا")+'<b></b></p><p>الرب يبارك حياتك</p></div>';if(pn)$("box").querySelector("b").textContent=pn}
-  else{go.disabled=false;go.textContent="إرسال";show(r&&r.error==="invalid"?"تأكد من الاسم ورقم الهاتف":"الخدمة مشغولة الآن، حاول بعد قليل")}};
- s.onerror=()=>fail();s.src=EP+"?"+p.toString();document.head.appendChild(s)};
+  else fail(r&&r.error==="invalid"?"تأكد من الاسم ورقم الهاتف":"الخدمة مشغولة الآن، حاول بعد قليل")}).catch(()=>{clearTimeout(tm);fail()})};
 </script></body></html>
